@@ -145,7 +145,6 @@ export function SplitMealCalculator() {
                 step="any"
                 inputMode="decimal"
                 placeholder="0.00"
-                className="text-right"
                 aria-invalid={!!errors.totalBill}
                 {...register('totalBill')}
               />
@@ -202,7 +201,6 @@ export function SplitMealCalculator() {
                       step="any"
                       inputMode="decimal"
                       placeholder="0.00"
-                      className="text-right"
                       aria-label={`Plate ${index + 1} price`}
                       aria-invalid={!!errors.items?.[index]?.price}
                       {...register(`items.${index}.price`)}
@@ -270,7 +268,6 @@ export function SplitMealCalculator() {
                       step="any"
                       inputMode="decimal"
                       placeholder="0.00"
-                      className="text-right"
                       aria-label={`Shared dish ${index + 1} price`}
                       aria-invalid={!!errors.sharedItems?.[index]?.price}
                       {...register(`sharedItems.${index}.price`)}
@@ -286,7 +283,6 @@ export function SplitMealCalculator() {
                       min="1"
                       inputMode="numeric"
                       placeholder="people"
-                      className="text-right"
                       aria-label={`Shared dish ${index + 1} people sharing`}
                       aria-invalid={!!errors.sharedItems?.[index]?.shares}
                       {...register(`sharedItems.${index}.shares`)}
@@ -307,7 +303,6 @@ export function SplitMealCalculator() {
                   type="number"
                   step="any"
                   inputMode="decimal"
-                  className="text-right"
                   aria-invalid={!!errors.serviceChargePct}
                   {...register('serviceChargePct')}
                 />
@@ -323,7 +318,6 @@ export function SplitMealCalculator() {
                   type="number"
                   step="any"
                   inputMode="decimal"
-                  className="text-right"
                   aria-invalid={!!errors.vatPct}
                   {...register('vatPct')}
                 />

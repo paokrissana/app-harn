@@ -11,7 +11,8 @@ function App() {
               Split Meal Calculator
             </h1>
             <p className="text-muted-foreground text-sm">
-              Calculate restaurant bills including Service Charge and VAT.
+              Work out what you owe whoever paid — your plates plus Service
+              Charge and VAT.
             </p>
           </div>
           <ThemeToggle />

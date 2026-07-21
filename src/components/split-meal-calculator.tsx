@@ -1,18 +1,18 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useForm } from 'react-hook-form'
-import { CheckIcon, CopyIcon } from 'lucide-react'
+import { useFieldArray, useForm } from 'react-hook-form'
+import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 import {
-  calculateSplit,
+  calculatePayback,
   formatTHB,
-  settlementSentence,
-  type SplitResult,
+  paybackSentence,
+  type PaybackResult,
 } from '@/lib/calculator'
 import {
-  calculatorSchema,
-  type CalculatorFormInput,
-  type CalculatorFormOutput,
+  paybackSchema,
+  type PaybackFormInput,
+  type PaybackFormOutput,
 } from '@/lib/schema'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,30 +24,66 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="text-destructive text-sm">{message}</p>
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+/** A field laid out as: label on the left, input on the right. */
+function FieldRow({
+  label,
+  htmlFor,
+  error,
+  children,
+}: {
+  label: string
+  htmlFor?: string
+  error?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        <Label htmlFor={htmlFor} className="w-28 shrink-0">
+          {label}
+        </Label>
+        <div className="flex-1">{children}</div>
+      </div>
+      {error && (
+        <p className="text-destructive pl-[7.75rem] text-sm">{error}</p>
+      )}
+    </div>
+  )
+}
+
+function SummaryRow({
+  label,
+  value,
+  muted,
+}: {
+  label: string
+  value: string
+  muted?: boolean
+}) {
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium tabular-nums">{value}</span>
+      <span
+        className={
+          muted
+            ? 'text-muted-foreground tabular-nums'
+            : 'font-medium tabular-nums'
+        }
+      >
+        {value}
+      </span>
     </div>
   )
 }
 
 export function SplitMealCalculator() {
-  const [result, setResult] = useState<SplitResult | null>(null)
+  const [result, setResult] = useState<PaybackResult | null>(null)
   const [copied, setCopied] = useState(false)
 
   const {
@@ -55,120 +91,246 @@ export function SplitMealCalculator() {
     handleSubmit,
     control,
     formState: { errors },
-  } = useForm<CalculatorFormInput, unknown, CalculatorFormOutput>({
-    resolver: zodResolver(calculatorSchema),
+  } = useForm<PaybackFormInput, unknown, PaybackFormOutput>({
+    resolver: zodResolver(paybackSchema),
     defaultValues: {
-      payer: 'A',
-      foodA: '',
-      foodB: '',
+      totalBill: '',
+      items: [{ name: '', price: '' }],
+      sharedItems: [],
       serviceChargePct: '10',
       vatPct: '7',
     },
   })
 
-  const onSubmit = (values: CalculatorFormOutput) => {
-    setResult(calculateSplit(values))
+  const ownPlates = useFieldArray({ control, name: 'items' })
+  const sharedPlates = useFieldArray({ control, name: 'sharedItems' })
+
+  const onSubmit = (values: PaybackFormOutput) => {
+    setResult(calculatePayback(values))
     setCopied(false)
   }
 
   const handleCopy = async () => {
     if (!result) return
-    await navigator.clipboard.writeText(settlementSentence(result))
+    await navigator.clipboard.writeText(paybackSentence(result))
     setCopied(true)
     window.setTimeout(() => setCopied(false), 2000)
   }
+
+  const itemsError = errors.items?.root?.message ?? errors.items?.message
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Bill details</CardTitle>
+          <CardTitle>What you owe</CardTitle>
           <CardDescription>
-            Enter each person’s food amount and the charges.
+            Add your plates and any shared dishes, then service charge and VAT.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form
             onSubmit={handleSubmit(onSubmit)}
             noValidate
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-5"
           >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="payer">Bill payer</Label>
-              <Controller
-                control={control}
-                name="payer"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="payer" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A">A</SelectItem>
-                      <SelectItem value="B">B</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+            <FieldRow
+              label="Total bill"
+              htmlFor="totalBill"
+              error={errors.totalBill?.message}
+            >
+              <Input
+                id="totalBill"
+                type="number"
+                step="any"
+                inputMode="decimal"
+                placeholder="0.00"
+                className="text-right"
+                aria-invalid={!!errors.totalBill}
+                {...register('totalBill')}
               />
+            </FieldRow>
+
+            {/* Your own plates */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <Label>Your plates</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => ownPlates.append({ name: '', price: '' })}
+                >
+                  <PlusIcon />
+                  Add plate
+                </Button>
+              </div>
+
+              {ownPlates.fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="flex flex-col gap-2 rounded-lg border p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-sm font-medium">
+                      Plate {index + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove plate ${index + 1}`}
+                      disabled={ownPlates.fields.length === 1}
+                      onClick={() => ownPlates.remove(index)}
+                    >
+                      <Trash2Icon />
+                    </Button>
+                  </div>
+                  <FieldRow label="Dish name">
+                    <Input
+                      aria-label={`Plate ${index + 1} name`}
+                      placeholder={`Dish ${index + 1}`}
+                      {...register(`items.${index}.name`)}
+                    />
+                  </FieldRow>
+                  <FieldRow
+                    label="Price"
+                    error={errors.items?.[index]?.price?.message}
+                  >
+                    <Input
+                      type="number"
+                      step="any"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      className="text-right"
+                      aria-label={`Plate ${index + 1} price`}
+                      aria-invalid={!!errors.items?.[index]?.price}
+                      {...register(`items.${index}.price`)}
+                    />
+                  </FieldRow>
+                </div>
+              ))}
+              <FieldError message={itemsError} />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="foodA">Person A food amount</Label>
-                <Input
-                  id="foodA"
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  aria-invalid={!!errors.foodA}
-                  {...register('foodA')}
-                />
-                <FieldError message={errors.foodA?.message} />
+            {/* Shared plates */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Shared plates</Label>
+                  <p className="text-muted-foreground text-xs">
+                    You pay price ÷ number of people sharing.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    sharedPlates.append({ name: '', price: '', shares: '2' })
+                  }
+                >
+                  <PlusIcon />
+                  Add shared
+                </Button>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="foodB">Person B food amount</Label>
-                <Input
-                  id="foodB"
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  aria-invalid={!!errors.foodB}
-                  {...register('foodB')}
-                />
-                <FieldError message={errors.foodB?.message} />
-              </div>
+              {sharedPlates.fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="flex flex-col gap-2 rounded-lg border p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground text-sm font-medium">
+                      Shared dish {index + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove shared dish ${index + 1}`}
+                      onClick={() => sharedPlates.remove(index)}
+                    >
+                      <Trash2Icon />
+                    </Button>
+                  </div>
+                  <FieldRow label="Dish name">
+                    <Input
+                      aria-label={`Shared dish ${index + 1} name`}
+                      placeholder={`Shared dish ${index + 1}`}
+                      {...register(`sharedItems.${index}.name`)}
+                    />
+                  </FieldRow>
+                  <FieldRow
+                    label="Price"
+                    error={errors.sharedItems?.[index]?.price?.message}
+                  >
+                    <Input
+                      type="number"
+                      step="any"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      className="text-right"
+                      aria-label={`Shared dish ${index + 1} price`}
+                      aria-invalid={!!errors.sharedItems?.[index]?.price}
+                      {...register(`sharedItems.${index}.price`)}
+                    />
+                  </FieldRow>
+                  <FieldRow
+                    label="Shared by"
+                    error={errors.sharedItems?.[index]?.shares?.message}
+                  >
+                    <Input
+                      type="number"
+                      step="1"
+                      min="1"
+                      inputMode="numeric"
+                      placeholder="people"
+                      className="text-right"
+                      aria-label={`Shared dish ${index + 1} people sharing`}
+                      aria-invalid={!!errors.sharedItems?.[index]?.shares}
+                      {...register(`sharedItems.${index}.shares`)}
+                    />
+                  </FieldRow>
+                </div>
+              ))}
+            </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="serviceChargePct">Service charge %</Label>
+            <div className="flex flex-col gap-4">
+              <FieldRow
+                label="Service charge %"
+                htmlFor="serviceChargePct"
+                error={errors.serviceChargePct?.message}
+              >
                 <Input
                   id="serviceChargePct"
                   type="number"
                   step="any"
                   inputMode="decimal"
+                  className="text-right"
                   aria-invalid={!!errors.serviceChargePct}
                   {...register('serviceChargePct')}
                 />
-                <FieldError message={errors.serviceChargePct?.message} />
-              </div>
+              </FieldRow>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="vatPct">VAT %</Label>
+              <FieldRow
+                label="VAT %"
+                htmlFor="vatPct"
+                error={errors.vatPct?.message}
+              >
                 <Input
                   id="vatPct"
                   type="number"
                   step="any"
                   inputMode="decimal"
+                  className="text-right"
                   aria-invalid={!!errors.vatPct}
                   {...register('vatPct')}
                 />
-                <FieldError message={errors.vatPct?.message} />
-              </div>
+              </FieldRow>
             </div>
 
-            <Button type="submit" className="mt-2 w-full">
+            <Button type="submit" className="w-full">
               Calculate
             </Button>
           </form>
@@ -181,35 +343,42 @@ export function SplitMealCalculator() {
             <CardTitle>Result</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <SummaryRow label="Food total" value={formatTHB(result.foodTotal)} />
-              <SummaryRow
-                label="Service charge"
-                value={formatTHB(result.serviceCharge)}
-              />
-              <SummaryRow label="VAT" value={formatTHB(result.vat)} />
-              <SummaryRow
-                label="Grand total"
-                value={formatTHB(result.grandTotal)}
-              />
-            </div>
+            <SummaryRow
+              label="Total bill (reference)"
+              value={formatTHB(result.totalBill)}
+              muted
+            />
 
             <div className="border-border border-t" />
 
             <div className="flex flex-col gap-2">
               <SummaryRow
-                label="Person A should pay"
-                value={formatTHB(result.paymentA)}
+                label="Your plates"
+                value={formatTHB(result.yourOwnFood)}
               />
+              {result.yourSharedFood > 0 && (
+                <SummaryRow
+                  label="Shared plates (your share)"
+                  value={formatTHB(result.yourSharedFood)}
+                />
+              )}
+              <SummaryRow label="Your food" value={formatTHB(result.yourFood)} />
               <SummaryRow
-                label="Person B should pay"
-                value={formatTHB(result.paymentB)}
+                label="Service charge"
+                value={formatTHB(result.serviceCharge)}
               />
+              <SummaryRow label="VAT" value={formatTHB(result.vat)} />
             </div>
 
             <div className="bg-muted flex flex-col gap-3 rounded-lg p-4">
-              <p className="text-center text-base font-semibold">
-                {settlementSentence(result)}
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">You pay A</span>
+                <span className="text-lg font-bold tabular-nums">
+                  {formatTHB(result.youPay)}
+                </span>
+              </div>
+              <p className="text-muted-foreground text-center text-sm">
+                {paybackSentence(result)}
               </p>
               <Button
                 type="button"

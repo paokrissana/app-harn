@@ -1,88 +1,106 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  calculateSplit,
+  calculatePayback,
   formatTHB,
-  settlementSentence,
-  type SplitInput,
+  paybackSentence,
+  shareOfPlate,
+  sumPlates,
+  sumSharedPlates,
+  type PaybackInput,
 } from './calculator'
 
-const base: SplitInput = {
-  payer: 'A',
-  foodA: 300,
-  foodB: 200,
+const base: PaybackInput = {
+  totalBill: 1177,
+  items: [
+    { name: 'Pad Thai', price: 180 },
+    { name: 'Coke', price: 40 },
+  ],
+  sharedItems: [],
   serviceChargePct: 10,
   vatPct: 7,
 }
 
-describe('calculateSplit', () => {
-  it('computes the full bill breakdown', () => {
-    const r = calculateSplit(base)
-    expect(r.foodTotal).toBe(500)
-    expect(r.serviceCharge).toBeCloseTo(50, 5) // 500 * 10%
-    expect(r.subtotal).toBeCloseTo(550, 5) // 500 + 50
-    expect(r.vat).toBeCloseTo(38.5, 5) // 550 * 7%
-    expect(r.grandTotal).toBeCloseTo(588.5, 5) // 550 + 38.5
+describe('sumPlates', () => {
+  it('adds up plate prices', () => {
+    expect(sumPlates(base.items)).toBe(220)
   })
 
-  it('splits payments proportionally to each food amount', () => {
-    const r = calculateSplit(base)
-    expect(r.ratioA).toBeCloseTo(0.6, 5)
-    expect(r.ratioB).toBeCloseTo(0.4, 5)
-    expect(r.paymentA).toBeCloseTo(353.1, 5) // 588.5 * 0.6
-    expect(r.paymentB).toBeCloseTo(235.4, 5) // 588.5 * 0.4
+  it('is zero for an empty list', () => {
+    expect(sumPlates([])).toBe(0)
+  })
+})
+
+describe('shareOfPlate', () => {
+  it('splits a dish evenly across sharers', () => {
+    expect(shareOfPlate({ name: 'Nachos', price: 300, shares: 4 })).toBe(75)
   })
 
-  it('per-person payments always sum to the grand total', () => {
-    const r = calculateSplit(base)
-    expect(r.paymentA + r.paymentB).toBeCloseTo(r.grandTotal, 5)
+  it('is zero when shares is zero (guards divide-by-zero)', () => {
+    expect(shareOfPlate({ name: 'x', price: 300, shares: 0 })).toBe(0)
+  })
+})
+
+describe('sumSharedPlates', () => {
+  it('sums the user’s slice across shared dishes', () => {
+    const shared = sumSharedPlates([
+      { name: 'Nachos', price: 300, shares: 4 }, // 75
+      { name: 'Wine', price: 400, shares: 2 }, // 200
+    ])
+    expect(shared).toBe(275)
+  })
+})
+
+describe('calculatePayback', () => {
+  it('adds service charge and VAT on top of the user’s plates', () => {
+    const r = calculatePayback(base)
+    expect(r.yourOwnFood).toBe(220)
+    expect(r.yourSharedFood).toBe(0)
+    expect(r.yourFood).toBe(220)
+    expect(r.serviceCharge).toBeCloseTo(22, 5) // 220 * 10%
+    expect(r.subtotal).toBeCloseTo(242, 5)
+    expect(r.vat).toBeCloseTo(16.94, 5) // 242 * 7%
+    expect(r.youPay).toBeCloseTo(258.94, 5)
   })
 
-  it('when A pays, B is the debtor and transfers B’s share', () => {
-    const r = calculateSplit({ ...base, payer: 'A' })
-    expect(r.debtor).toBe('B')
-    expect(r.transferAmount).toBeCloseTo(r.paymentB, 5)
-  })
-
-  it('when B pays, A is the debtor and transfers A’s share', () => {
-    const r = calculateSplit({ ...base, payer: 'B' })
-    expect(r.debtor).toBe('A')
-    expect(r.transferAmount).toBeCloseTo(r.paymentA, 5)
-  })
-
-  it('handles zero service charge and zero VAT', () => {
-    const r = calculateSplit({
+  it('includes the user’s slice of shared plates in the food total', () => {
+    const r = calculatePayback({
       ...base,
-      serviceChargePct: 0,
-      vatPct: 0,
+      sharedItems: [{ name: 'Nachos', price: 300, shares: 4 }], // +75
     })
+    expect(r.yourOwnFood).toBe(220)
+    expect(r.yourSharedFood).toBe(75)
+    expect(r.yourFood).toBe(295)
+    expect(r.serviceCharge).toBeCloseTo(29.5, 5) // 295 * 10%
+    expect(r.subtotal).toBeCloseTo(324.5, 5)
+    expect(r.vat).toBeCloseTo(22.715, 4) // 324.5 * 7%
+    expect(r.youPay).toBeCloseTo(347.215, 4)
+  })
+
+  it('passes the total bill through untouched (reference only)', () => {
+    expect(calculatePayback(base).totalBill).toBe(1177)
+  })
+
+  it('pays exactly the food when there is no service charge or VAT', () => {
+    const r = calculatePayback({ ...base, serviceChargePct: 0, vatPct: 0 })
     expect(r.serviceCharge).toBe(0)
     expect(r.vat).toBe(0)
-    expect(r.grandTotal).toBe(r.foodTotal)
-  })
-
-  it('splits an equal bill evenly', () => {
-    const r = calculateSplit({ ...base, foodA: 250, foodB: 250 })
-    expect(r.ratioA).toBeCloseTo(0.5, 5)
-    expect(r.ratioB).toBeCloseTo(0.5, 5)
-    expect(r.paymentA).toBeCloseTo(r.paymentB, 5)
+    expect(r.youPay).toBe(r.yourFood)
   })
 })
 
 describe('formatTHB', () => {
   it('formats with two decimals and a THB suffix', () => {
-    expect(formatTHB(493.42)).toBe('493.42 THB')
+    expect(formatTHB(258.94)).toBe('258.94 THB')
     expect(formatTHB(1000)).toBe('1,000.00 THB')
-    expect(formatTHB(1234.5)).toBe('1,234.50 THB')
     expect(formatTHB(0)).toBe('0.00 THB')
   })
 })
 
-describe('settlementSentence', () => {
-  it('describes who transfers to whom', () => {
-    const r = calculateSplit({ ...base, foodA: 300, foodB: 200, payer: 'A' })
-    expect(settlementSentence(r)).toBe(
-      `B should transfer ${formatTHB(r.paymentB)} to A`,
+describe('paybackSentence', () => {
+  it('states what the user should pay back', () => {
+    expect(paybackSentence(calculatePayback(base))).toBe(
+      'You should pay 258.94 THB to A',
     )
   })
 })

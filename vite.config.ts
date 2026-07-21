@@ -5,7 +5,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Served from https://paokrissana.github.io/appharn-split-meal/ in production.
+  base: command === 'build' ? '/appharn-split-meal/' : '/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 6900,
@@ -20,4 +22,4 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
   },
-})
+}))

@@ -19,9 +19,9 @@ describe('SplitMealCalculator (UI)', () => {
     renderCalc()
 
     await user.type(screen.getByLabelText(/total bill/i), '1177')
-    await user.type(screen.getByLabelText(/plate 1 price/i), '180')
-    await user.click(screen.getByRole('button', { name: /add plate/i }))
-    await user.type(screen.getByLabelText(/plate 2 price/i), '40')
+    await user.type(screen.getByLabelText(/item 1 price/i), '180')
+    await user.click(screen.getByRole('button', { name: /add item/i }))
+    await user.type(screen.getByLabelText(/item 2 price/i), '40')
 
     await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 
@@ -36,11 +36,11 @@ describe('SplitMealCalculator (UI)', () => {
     renderCalc()
 
     await user.type(screen.getByLabelText(/total bill/i), '1177')
-    await user.type(screen.getByLabelText(/plate 1 price/i), '220')
+    await user.type(screen.getByLabelText(/item 1 price/i), '220')
 
     await user.click(screen.getByRole('button', { name: /add shared/i }))
-    await user.type(screen.getByLabelText(/shared dish 1 price/i), '300')
-    const shares = screen.getByLabelText(/shared dish 1 people sharing/i)
+    await user.type(screen.getByLabelText(/shared item 1 price/i), '300')
+    const shares = screen.getByLabelText(/shared item 1 people sharing/i)
     await user.clear(shares)
     await user.type(shares, '4') // 300 / 4 = 75
 
@@ -57,11 +57,11 @@ describe('SplitMealCalculator (UI)', () => {
     renderCalc()
 
     await user.click(screen.getByRole('button', { name: /add shared/i }))
-    expect(screen.getByLabelText(/shared dish 1 price/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/shared item 1 price/i)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /remove shared dish 1/i }))
+    await user.click(screen.getByRole('button', { name: /remove shared item 1/i }))
     expect(
-      screen.queryByLabelText(/shared dish 1 price/i),
+      screen.queryByLabelText(/shared item 1 price/i),
     ).not.toBeInTheDocument()
   })
 

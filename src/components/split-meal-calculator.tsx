@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ComponentProps, type ReactNode } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
@@ -14,6 +14,7 @@ import {
   type PaybackFormOutput,
 } from '@/lib/schema'
 import { useI18n } from '@/i18n/context'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -45,16 +46,25 @@ function FieldRow({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-3">
-        <Label htmlFor={htmlFor} className="w-28 shrink-0">
-          {label}
-        </Label>
-        <div className="flex-1">{children}</div>
-      </div>
+    <div className="grid grid-cols-[8.5rem_1fr] items-center gap-x-3 gap-y-1">
+      <Label htmlFor={htmlFor} className="leading-tight">
+        {label}
+      </Label>
+      <div>{children}</div>
       {error && (
-        <p className="text-destructive pl-[7.75rem] text-sm">{error}</p>
+        <p className="text-destructive col-start-2 text-sm">{error}</p>
       )}
+    </div>
+  )
+}
+
+function MoneyInput({ className, ...props }: ComponentProps<typeof Input>) {
+  return (
+    <div className="relative">
+      <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+        ฿
+      </span>
+      <Input className={cn('pl-7', className)} {...props} />
     </div>
   )
 }
@@ -146,7 +156,7 @@ export function SplitMealCalculator() {
               htmlFor="totalBill"
               error={errors.totalBill?.message}
             >
-              <Input
+              <MoneyInput
                 id="totalBill"
                 type="number"
                 step="any"
@@ -185,7 +195,7 @@ export function SplitMealCalculator() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      aria-label={`Remove plate ${index + 1}`}
+                      aria-label={`Remove item ${index + 1}`}
                       disabled={ownPlates.fields.length === 1}
                       onClick={() => ownPlates.remove(index)}
                     >
@@ -194,7 +204,7 @@ export function SplitMealCalculator() {
                   </div>
                   <FieldRow label={t('dishName')}>
                     <Input
-                      aria-label={`Plate ${index + 1} name`}
+                      aria-label={`Item ${index + 1} name`}
                       placeholder={`${t('dishPlaceholder')} ${index + 1}`}
                       {...register(`items.${index}.name`)}
                     />
@@ -203,12 +213,12 @@ export function SplitMealCalculator() {
                     label={t('price')}
                     error={errors.items?.[index]?.price?.message}
                   >
-                    <Input
+                    <MoneyInput
                       type="number"
                       step="any"
                       inputMode="decimal"
                       placeholder="0.00"
-                      aria-label={`Plate ${index + 1} price`}
+                      aria-label={`Item ${index + 1} price`}
                       aria-invalid={!!errors.items?.[index]?.price}
                       {...register(`items.${index}.price`)}
                     />
@@ -253,7 +263,7 @@ export function SplitMealCalculator() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      aria-label={`Remove shared dish ${index + 1}`}
+                      aria-label={`Remove shared item ${index + 1}`}
                       onClick={() => sharedPlates.remove(index)}
                     >
                       <Trash2Icon />
@@ -261,7 +271,7 @@ export function SplitMealCalculator() {
                   </div>
                   <FieldRow label={t('dishName')}>
                     <Input
-                      aria-label={`Shared dish ${index + 1} name`}
+                      aria-label={`Shared item ${index + 1} name`}
                       placeholder={`${t('sharedDish')} ${index + 1}`}
                       {...register(`sharedItems.${index}.name`)}
                     />
@@ -270,12 +280,12 @@ export function SplitMealCalculator() {
                     label={t('price')}
                     error={errors.sharedItems?.[index]?.price?.message}
                   >
-                    <Input
+                    <MoneyInput
                       type="number"
                       step="any"
                       inputMode="decimal"
                       placeholder="0.00"
-                      aria-label={`Shared dish ${index + 1} price`}
+                      aria-label={`Shared item ${index + 1} price`}
                       aria-invalid={!!errors.sharedItems?.[index]?.price}
                       {...register(`sharedItems.${index}.price`)}
                     />
@@ -290,7 +300,7 @@ export function SplitMealCalculator() {
                       min="1"
                       inputMode="numeric"
                       placeholder={t('peoplePlaceholder')}
-                      aria-label={`Shared dish ${index + 1} people sharing`}
+                      aria-label={`Shared item ${index + 1} people sharing`}
                       aria-invalid={!!errors.sharedItems?.[index]?.shares}
                       {...register(`sharedItems.${index}.shares`)}
                     />
@@ -374,23 +384,21 @@ export function SplitMealCalculator() {
               <SummaryRow label={t('vatRow')} value={formatTHB(result.vat)} />
             </div>
 
-            <div className="bg-muted flex flex-col gap-3 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">
-                  {t('youPay', { payer: PAYER })}
-                </span>
-                <span className="text-lg font-bold tabular-nums">
-                  {formatTHB(result.youPay)}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-center text-sm">
+            <div className="border-primary/20 bg-primary/10 flex flex-col items-center gap-2 rounded-xl border p-5 text-center">
+              <span className="text-muted-foreground text-sm font-medium">
+                {t('youPay', { payer: PAYER })}
+              </span>
+              <span className="text-primary text-4xl font-extrabold tracking-tight tabular-nums">
+                {formatTHB(result.youPay)}
+              </span>
+              <p className="text-muted-foreground text-sm text-balance">
                 {settlement}
               </p>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="self-center"
+                className="mt-1"
                 onClick={handleCopy}
               >
                 {copied ? <CheckIcon /> : <CopyIcon />}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MoonIcon, SunIcon } from 'lucide-react'
 
+import { useI18n } from '@/i18n/context'
 import { Button } from '@/components/ui/button'
 
 type Theme = 'light' | 'dark'
@@ -14,6 +15,7 @@ function getInitialTheme(): Theme {
 }
 
 export function ThemeToggle() {
+  const { t } = useI18n()
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export function ThemeToggle() {
       type="button"
       variant="outline"
       size="icon"
-      aria-label="Toggle dark mode"
+      aria-label={t('toggleTheme')}
       onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
     >
       {theme === 'dark' ? <SunIcon /> : <MoonIcon />}

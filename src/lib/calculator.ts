@@ -94,8 +94,3 @@ export function formatTHB(amount: number): string {
   }).format(amount)
   return `${formatted} THB`
 }
-
-/** Human-readable settlement sentence, e.g. `"You should pay 258.94 THB to A"`. */
-export function paybackSentence(result: PaybackResult): string {
-  return `You should pay ${formatTHB(result.youPay)} to A`
-}

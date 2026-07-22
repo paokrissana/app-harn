@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   calculatePayback,
   formatTHB,
-  paybackSentence,
   shareOfPlate,
   sumPlates,
   sumSharedPlates,
@@ -94,13 +93,5 @@ describe('formatTHB', () => {
     expect(formatTHB(258.94)).toBe('258.94 THB')
     expect(formatTHB(1000)).toBe('1,000.00 THB')
     expect(formatTHB(0)).toBe('0.00 THB')
-  })
-})
-
-describe('paybackSentence', () => {
-  it('states what the user should pay back', () => {
-    expect(paybackSentence(calculatePayback(base))).toBe(
-      'You should pay 258.94 THB to A',
-    )
   })
 })

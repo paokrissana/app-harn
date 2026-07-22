@@ -2,12 +2,21 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
+import { LanguageProvider } from '@/i18n/context'
 import { SplitMealCalculator } from './split-meal-calculator'
+
+function renderCalc() {
+  return render(
+    <LanguageProvider>
+      <SplitMealCalculator />
+    </LanguageProvider>,
+  )
+}
 
 describe('SplitMealCalculator (UI)', () => {
   it('computes payback from own plates with service charge and VAT', async () => {
     const user = userEvent.setup()
-    render(<SplitMealCalculator />)
+    renderCalc()
 
     await user.type(screen.getByLabelText(/total bill/i), '1177')
     await user.type(screen.getByLabelText(/plate 1 price/i), '180')
@@ -24,7 +33,7 @@ describe('SplitMealCalculator (UI)', () => {
 
   it('adds a shared dish and includes the user’s slice', async () => {
     const user = userEvent.setup()
-    render(<SplitMealCalculator />)
+    renderCalc()
 
     await user.type(screen.getByLabelText(/total bill/i), '1177')
     await user.type(screen.getByLabelText(/plate 1 price/i), '220')
@@ -45,7 +54,7 @@ describe('SplitMealCalculator (UI)', () => {
 
   it('removes a shared dish', async () => {
     const user = userEvent.setup()
-    render(<SplitMealCalculator />)
+    renderCalc()
 
     await user.click(screen.getByRole('button', { name: /add shared/i }))
     expect(screen.getByLabelText(/shared dish 1 price/i)).toBeInTheDocument()
@@ -58,7 +67,7 @@ describe('SplitMealCalculator (UI)', () => {
 
   it('shows validation errors when required fields are empty', async () => {
     const user = userEvent.setup()
-    render(<SplitMealCalculator />)
+    renderCalc()
 
     await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 

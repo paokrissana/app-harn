@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
@@ -6,14 +6,14 @@ import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import {
   calculatePayback,
   formatTHB,
-  paybackSentence,
   type PaybackResult,
 } from '@/lib/calculator'
 import {
-  paybackSchema,
+  createPaybackSchema,
   type PaybackFormInput,
   type PaybackFormOutput,
 } from '@/lib/schema'
+import { useI18n } from '@/i18n/context'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
+const PAYER = 'A'
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
@@ -83,8 +85,11 @@ function SummaryRow({
 }
 
 export function SplitMealCalculator() {
+  const { t } = useI18n()
   const [result, setResult] = useState<PaybackResult | null>(null)
   const [copied, setCopied] = useState(false)
+
+  const schema = useMemo(() => createPaybackSchema(t), [t])
 
   const {
     register,
@@ -92,7 +97,7 @@ export function SplitMealCalculator() {
     control,
     formState: { errors },
   } = useForm<PaybackFormInput, unknown, PaybackFormOutput>({
-    resolver: zodResolver(paybackSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       totalBill: '',
       items: [{ name: '', price: '' }],
@@ -110,9 +115,13 @@ export function SplitMealCalculator() {
     setCopied(false)
   }
 
+  const settlement = result
+    ? t('settlement', { amount: formatTHB(result.youPay), payer: PAYER })
+    : ''
+
   const handleCopy = async () => {
-    if (!result) return
-    await navigator.clipboard.writeText(paybackSentence(result))
+    if (!settlement) return
+    await navigator.clipboard.writeText(settlement)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 2000)
   }
@@ -123,10 +132,8 @@ export function SplitMealCalculator() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>What you owe</CardTitle>
-          <CardDescription>
-            Add your plates and any shared dishes, then service charge and VAT.
-          </CardDescription>
+          <CardTitle>{t('cardTitle')}</CardTitle>
+          <CardDescription>{t('cardDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -135,7 +142,7 @@ export function SplitMealCalculator() {
             className="flex flex-col gap-5"
           >
             <FieldRow
-              label="Total bill"
+              label={t('totalBill')}
               htmlFor="totalBill"
               error={errors.totalBill?.message}
             >
@@ -153,7 +160,7 @@ export function SplitMealCalculator() {
             {/* Your own plates */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <Label>Your plates</Label>
+                <Label>{t('yourPlates')}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -161,7 +168,7 @@ export function SplitMealCalculator() {
                   onClick={() => ownPlates.append({ name: '', price: '' })}
                 >
                   <PlusIcon />
-                  Add plate
+                  {t('addPlate')}
                 </Button>
               </div>
 
@@ -172,7 +179,7 @@ export function SplitMealCalculator() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm font-medium">
-                      Plate {index + 1}
+                      {t('plate')} {index + 1}
                     </span>
                     <Button
                       type="button"
@@ -185,15 +192,15 @@ export function SplitMealCalculator() {
                       <Trash2Icon />
                     </Button>
                   </div>
-                  <FieldRow label="Dish name">
+                  <FieldRow label={t('dishName')}>
                     <Input
                       aria-label={`Plate ${index + 1} name`}
-                      placeholder={`Dish ${index + 1}`}
+                      placeholder={`${t('dishPlaceholder')} ${index + 1}`}
                       {...register(`items.${index}.name`)}
                     />
                   </FieldRow>
                   <FieldRow
-                    label="Price"
+                    label={t('price')}
                     error={errors.items?.[index]?.price?.message}
                   >
                     <Input
@@ -215,9 +222,9 @@ export function SplitMealCalculator() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Shared plates</Label>
+                  <Label>{t('sharedPlates')}</Label>
                   <p className="text-muted-foreground text-xs">
-                    You pay price ÷ number of people sharing.
+                    {t('sharedHelp')}
                   </p>
                 </div>
                 <Button
@@ -229,7 +236,7 @@ export function SplitMealCalculator() {
                   }
                 >
                   <PlusIcon />
-                  Add shared
+                  {t('addShared')}
                 </Button>
               </div>
 
@@ -240,7 +247,7 @@ export function SplitMealCalculator() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm font-medium">
-                      Shared dish {index + 1}
+                      {t('sharedDish')} {index + 1}
                     </span>
                     <Button
                       type="button"
@@ -252,15 +259,15 @@ export function SplitMealCalculator() {
                       <Trash2Icon />
                     </Button>
                   </div>
-                  <FieldRow label="Dish name">
+                  <FieldRow label={t('dishName')}>
                     <Input
                       aria-label={`Shared dish ${index + 1} name`}
-                      placeholder={`Shared dish ${index + 1}`}
+                      placeholder={`${t('sharedDish')} ${index + 1}`}
                       {...register(`sharedItems.${index}.name`)}
                     />
                   </FieldRow>
                   <FieldRow
-                    label="Price"
+                    label={t('price')}
                     error={errors.sharedItems?.[index]?.price?.message}
                   >
                     <Input
@@ -274,7 +281,7 @@ export function SplitMealCalculator() {
                     />
                   </FieldRow>
                   <FieldRow
-                    label="Shared by"
+                    label={t('sharedBy')}
                     error={errors.sharedItems?.[index]?.shares?.message}
                   >
                     <Input
@@ -282,7 +289,7 @@ export function SplitMealCalculator() {
                       step="1"
                       min="1"
                       inputMode="numeric"
-                      placeholder="people"
+                      placeholder={t('peoplePlaceholder')}
                       aria-label={`Shared dish ${index + 1} people sharing`}
                       aria-invalid={!!errors.sharedItems?.[index]?.shares}
                       {...register(`sharedItems.${index}.shares`)}
@@ -294,7 +301,7 @@ export function SplitMealCalculator() {
 
             <div className="flex flex-col gap-4">
               <FieldRow
-                label="Service charge %"
+                label={t('serviceChargePct')}
                 htmlFor="serviceChargePct"
                 error={errors.serviceChargePct?.message}
               >
@@ -309,7 +316,7 @@ export function SplitMealCalculator() {
               </FieldRow>
 
               <FieldRow
-                label="VAT %"
+                label={t('vatPct')}
                 htmlFor="vatPct"
                 error={errors.vatPct?.message}
               >
@@ -325,7 +332,7 @@ export function SplitMealCalculator() {
             </div>
 
             <Button type="submit" className="w-full">
-              Calculate
+              {t('calculate')}
             </Button>
           </form>
         </CardContent>
@@ -334,11 +341,11 @@ export function SplitMealCalculator() {
       {result && (
         <Card>
           <CardHeader>
-            <CardTitle>Result</CardTitle>
+            <CardTitle>{t('result')}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <SummaryRow
-              label="Total bill (reference)"
+              label={t('totalBillRef')}
               value={formatTHB(result.totalBill)}
               muted
             />
@@ -347,32 +354,37 @@ export function SplitMealCalculator() {
 
             <div className="flex flex-col gap-2">
               <SummaryRow
-                label="Your plates"
+                label={t('yourPlates')}
                 value={formatTHB(result.yourOwnFood)}
               />
               {result.yourSharedFood > 0 && (
                 <SummaryRow
-                  label="Shared plates (your share)"
+                  label={t('sharedShareRow')}
                   value={formatTHB(result.yourSharedFood)}
                 />
               )}
-              <SummaryRow label="Your food" value={formatTHB(result.yourFood)} />
               <SummaryRow
-                label="Service charge"
+                label={t('yourFood')}
+                value={formatTHB(result.yourFood)}
+              />
+              <SummaryRow
+                label={t('serviceChargeRow')}
                 value={formatTHB(result.serviceCharge)}
               />
-              <SummaryRow label="VAT" value={formatTHB(result.vat)} />
+              <SummaryRow label={t('vatRow')} value={formatTHB(result.vat)} />
             </div>
 
             <div className="bg-muted flex flex-col gap-3 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <span className="font-semibold">You pay A</span>
+                <span className="font-semibold">
+                  {t('youPay', { payer: PAYER })}
+                </span>
                 <span className="text-lg font-bold tabular-nums">
                   {formatTHB(result.youPay)}
                 </span>
               </div>
               <p className="text-muted-foreground text-center text-sm">
-                {paybackSentence(result)}
+                {settlement}
               </p>
               <Button
                 type="button"
@@ -382,7 +394,7 @@ export function SplitMealCalculator() {
                 onClick={handleCopy}
               >
                 {copied ? <CheckIcon /> : <CopyIcon />}
-                {copied ? 'Copied' : 'Copy result'}
+                {copied ? t('copied') : t('copyResult')}
               </Button>
             </div>
           </CardContent>

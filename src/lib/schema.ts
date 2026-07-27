@@ -37,13 +37,38 @@ export function createPaybackSchema(t: Translate) {
     shares: shareCountField,
   })
 
+  /**
+   * A percentage that can be switched off. Kept as a raw string here — it is
+   * only validated when its toggle is on, which needs the sibling boolean, so
+   * the checks live in the object-level refinement below.
+   */
+  const percentField = z.string().trim()
+
+  /** Validate one percentage field, but only while its toggle is on. */
+  const checkPercent = (
+    ctx: z.RefinementCtx,
+    enabled: boolean,
+    value: string,
+    path: string,
+  ) => {
+    if (!enabled) return
+    const issue = (message: string) =>
+      ctx.addIssue({ code: 'custom', message, path: [path] })
+
+    if (value === '') issue(t('required'))
+    else if (Number.isNaN(Number(value))) issue(t('numbersOnly'))
+    else if (Number(value) < 0) issue(t('cannotBeNegative'))
+  }
+
   return z
     .object({
       totalBill: moneyField,
       items: z.array(plateSchema).min(1, t('addAtLeastOnePlate')),
       sharedItems: z.array(sharedPlateSchema),
-      serviceChargePct: moneyField,
-      vatPct: moneyField,
+      serviceChargeEnabled: z.boolean(),
+      serviceChargePct: percentField,
+      vatEnabled: z.boolean(),
+      vatPct: percentField,
     })
     .refine(
       (data) => {
@@ -56,6 +81,23 @@ export function createPaybackSchema(t: Translate) {
       },
       { error: t('platesPositive'), path: ['items'] },
     )
+    .superRefine((data, ctx) => {
+      checkPercent(
+        ctx,
+        data.serviceChargeEnabled,
+        data.serviceChargePct,
+        'serviceChargePct',
+      )
+      checkPercent(ctx, data.vatEnabled, data.vatPct, 'vatPct')
+    })
+    .transform((data) => ({
+      ...data,
+      // A switched-off charge contributes nothing, whatever is left in its box.
+      serviceChargePct: data.serviceChargeEnabled
+        ? Number(data.serviceChargePct)
+        : 0,
+      vatPct: data.vatEnabled ? Number(data.vatPct) : 0,
+    }))
 }
 
 type PaybackSchema = ReturnType<typeof createPaybackSchema>

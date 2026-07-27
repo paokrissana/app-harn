@@ -20,8 +20,12 @@ export interface PaybackInput {
   items: Plate[]
   /** Plates shared with others; the user pays price / shares of each. */
   sharedItems: SharedPlate[]
+  /** Whether service charge applies at all. Defaults to true. */
+  serviceChargeEnabled?: boolean
   /** Service charge, as a percentage (e.g. 10 for 10%). */
   serviceChargePct: number
+  /** Whether VAT applies at all. Defaults to true. */
+  vatEnabled?: boolean
   /** VAT, as a percentage (e.g. 7 for 7%). */
   vatPct: number
 }
@@ -36,8 +40,12 @@ export interface PaybackResult {
   yourSharedFood: number
   /** Own plates + shared slice, before charges. */
   yourFood: number
+  /** Whether service charge was applied — false when switched off. */
+  serviceChargeApplied: boolean
   serviceCharge: number
   subtotal: number
+  /** Whether VAT was applied — false when switched off. */
+  vatApplied: boolean
   vat: number
   /** Final amount to pay back. */
   youPay: number
@@ -61,17 +69,21 @@ export function sumSharedPlates(items: SharedPlate[]): number {
 /**
  * Work out what the user owes the person who paid the group bill: their own
  * plates plus their slice of any shared plates, with service charge and VAT
- * added on top.
+ * added on top. Either charge can be switched off; both apply by default.
  */
 export function calculatePayback(input: PaybackInput): PaybackResult {
   const { totalBill, items, sharedItems, serviceChargePct, vatPct } = input
+  const serviceChargeApplied = input.serviceChargeEnabled ?? true
+  const vatApplied = input.vatEnabled ?? true
 
   const yourOwnFood = sumPlates(items)
   const yourSharedFood = sumSharedPlates(sharedItems)
   const yourFood = yourOwnFood + yourSharedFood
-  const serviceCharge = yourFood * (serviceChargePct / 100)
+  const serviceCharge = serviceChargeApplied
+    ? yourFood * (serviceChargePct / 100)
+    : 0
   const subtotal = yourFood + serviceCharge
-  const vat = subtotal * (vatPct / 100)
+  const vat = vatApplied ? subtotal * (vatPct / 100) : 0
   const youPay = subtotal + vat
 
   return {
@@ -79,8 +91,10 @@ export function calculatePayback(input: PaybackInput): PaybackResult {
     yourOwnFood,
     yourSharedFood,
     yourFood,
+    serviceChargeApplied,
     serviceCharge,
     subtotal,
+    vatApplied,
     vat,
     youPay,
   }

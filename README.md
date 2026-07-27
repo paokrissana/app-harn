@@ -22,6 +22,11 @@ payPerson     = grandTotal * ratioPerson
 The person who did **not** pay transfers their share to the payer, e.g.
 _"B should transfer 235.40 THB to A"_.
 
+Service charge and VAT each have their own switch, both **on** by default.
+Switching one off drops it from the maths and from the summary — the
+percentage box greys out and stops being validated, so a place that charges
+neither (or VAT only) works without clearing the boxes.
+
 ## Stack
 
 - React 19 + TypeScript + Vite
@@ -45,7 +50,8 @@ npm run lint       # oxlint
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/schema.ts` — Zod form schema
 - `src/components/split-meal-calculator.tsx` — form + result card
-- `src/components/ui/` — shadcn components
+- `src/components/ui/` — shadcn components (`switch.tsx` is a dependency-free
+  switch built on a native checkbox)
 
 ## Notes
 

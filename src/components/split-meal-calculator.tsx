@@ -1,6 +1,6 @@
 import { useMemo, useState, type ComponentProps, type ReactNode } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 import {
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 
 const PAYER = 'A'
 
@@ -54,6 +55,45 @@ function FieldRow({
       {error && (
         <p className="text-destructive col-start-2 text-sm">{error}</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * A percentage field that can be switched off: toggle and label on the left,
+ * a narrow input on the right that greys out when the charge does not apply.
+ */
+function ChargeRow({
+  label,
+  htmlFor,
+  enabled,
+  error,
+  toggle,
+  children,
+}: {
+  label: string
+  htmlFor: string
+  enabled: boolean
+  error?: string
+  toggle: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        {toggle}
+        <Label
+          htmlFor={htmlFor}
+          className={cn(
+            'flex-1 leading-tight',
+            !enabled && 'text-muted-foreground',
+          )}
+        >
+          {label}
+        </Label>
+        <div className="w-24">{children}</div>
+      </div>
+      {error && <p className="text-destructive text-right text-sm">{error}</p>}
     </div>
   )
 }
@@ -112,13 +152,21 @@ export function SplitMealCalculator() {
       totalBill: '',
       items: [{ name: '', price: '' }],
       sharedItems: [],
+      serviceChargeEnabled: true,
       serviceChargePct: '10',
+      vatEnabled: true,
       vatPct: '7',
     },
   })
 
   const ownPlates = useFieldArray({ control, name: 'items' })
   const sharedPlates = useFieldArray({ control, name: 'sharedItems' })
+
+  const serviceChargeEnabled = useWatch({
+    control,
+    name: 'serviceChargeEnabled',
+  })
+  const vatEnabled = useWatch({ control, name: 'vatEnabled' })
 
   const onSubmit = (values: PaybackFormOutput) => {
     setResult(calculatePayback(values))
@@ -309,36 +357,57 @@ export function SplitMealCalculator() {
               ))}
             </div>
 
-            <div className="flex flex-col gap-4">
-              <FieldRow
+            {/* Charges — each one can be switched off entirely */}
+            <div className="flex flex-col gap-3 rounded-lg border p-3">
+              <span className="text-muted-foreground text-sm font-medium">
+                {t('charges')}
+              </span>
+
+              <ChargeRow
                 label={t('serviceChargePct')}
                 htmlFor="serviceChargePct"
+                enabled={serviceChargeEnabled}
                 error={errors.serviceChargePct?.message}
+                toggle={
+                  <Switch
+                    aria-label={t('includeServiceCharge')}
+                    {...register('serviceChargeEnabled')}
+                  />
+                }
               >
                 <Input
                   id="serviceChargePct"
                   type="number"
                   step="any"
                   inputMode="decimal"
+                  disabled={!serviceChargeEnabled}
                   aria-invalid={!!errors.serviceChargePct}
                   {...register('serviceChargePct')}
                 />
-              </FieldRow>
+              </ChargeRow>
 
-              <FieldRow
+              <ChargeRow
                 label={t('vatPct')}
                 htmlFor="vatPct"
+                enabled={vatEnabled}
                 error={errors.vatPct?.message}
+                toggle={
+                  <Switch
+                    aria-label={t('includeVat')}
+                    {...register('vatEnabled')}
+                  />
+                }
               >
                 <Input
                   id="vatPct"
                   type="number"
                   step="any"
                   inputMode="decimal"
+                  disabled={!vatEnabled}
                   aria-invalid={!!errors.vatPct}
                   {...register('vatPct')}
                 />
-              </FieldRow>
+              </ChargeRow>
             </div>
 
             <Button type="submit" className="w-full">
@@ -377,11 +446,15 @@ export function SplitMealCalculator() {
                 label={t('yourFood')}
                 value={formatTHB(result.yourFood)}
               />
-              <SummaryRow
-                label={t('serviceChargeRow')}
-                value={formatTHB(result.serviceCharge)}
-              />
-              <SummaryRow label={t('vatRow')} value={formatTHB(result.vat)} />
+              {result.serviceChargeApplied && (
+                <SummaryRow
+                  label={t('serviceChargeRow')}
+                  value={formatTHB(result.serviceCharge)}
+                />
+              )}
+              {result.vatApplied && (
+                <SummaryRow label={t('vatRow')} value={formatTHB(result.vat)} />
+              )}
             </div>
 
             <div className="border-primary/20 bg-primary/10 flex flex-col items-center gap-2 rounded-xl border p-5 text-center">

@@ -86,6 +86,49 @@ describe('calculatePayback', () => {
     expect(r.vat).toBe(0)
     expect(r.youPay).toBe(r.yourFood)
   })
+
+  it('applies both charges when the toggles are omitted', () => {
+    const r = calculatePayback(base)
+    expect(r.serviceChargeApplied).toBe(true)
+    expect(r.vatApplied).toBe(true)
+  })
+
+  it('skips service charge when its toggle is off, but still charges VAT', () => {
+    const r = calculatePayback({ ...base, serviceChargeEnabled: false })
+    expect(r.serviceChargeApplied).toBe(false)
+    expect(r.serviceCharge).toBe(0)
+    expect(r.subtotal).toBe(220)
+    expect(r.vat).toBeCloseTo(15.4, 5) // 220 * 7%
+    expect(r.youPay).toBeCloseTo(235.4, 5)
+  })
+
+  it('skips VAT when its toggle is off, but still charges service', () => {
+    const r = calculatePayback({ ...base, vatEnabled: false })
+    expect(r.vatApplied).toBe(false)
+    expect(r.serviceCharge).toBeCloseTo(22, 5)
+    expect(r.vat).toBe(0)
+    expect(r.youPay).toBeCloseTo(242, 5)
+  })
+
+  it('pays the bare food total with both toggles off', () => {
+    const r = calculatePayback({
+      ...base,
+      serviceChargeEnabled: false,
+      vatEnabled: false,
+    })
+    expect(r.youPay).toBe(220)
+  })
+
+  it('ignores the percentages entirely while a charge is switched off', () => {
+    const r = calculatePayback({
+      ...base,
+      serviceChargeEnabled: false,
+      serviceChargePct: 99,
+      vatEnabled: false,
+      vatPct: 99,
+    })
+    expect(r.youPay).toBe(r.yourFood)
+  })
 })
 
 describe('formatTHB', () => {

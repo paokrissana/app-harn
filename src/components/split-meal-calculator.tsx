@@ -199,22 +199,6 @@ export function SplitMealCalculator() {
             noValidate
             className="flex flex-col gap-5"
           >
-            <FieldRow
-              label={t('totalBill')}
-              htmlFor="totalBill"
-              error={errors.totalBill?.message}
-            >
-              <MoneyInput
-                id="totalBill"
-                type="number"
-                step="any"
-                inputMode="decimal"
-                placeholder="0.00"
-                aria-invalid={!!errors.totalBill}
-                {...register('totalBill')}
-              />
-            </FieldRow>
-
             {/* Your own plates */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -409,6 +393,23 @@ export function SplitMealCalculator() {
                 />
               </ChargeRow>
             </div>
+
+            {/* Last, like the bottom line of the receipt — reference only */}
+            <FieldRow
+              label={t('totalBill')}
+              htmlFor="totalBill"
+              error={errors.totalBill?.message}
+            >
+              <MoneyInput
+                id="totalBill"
+                type="number"
+                step="any"
+                inputMode="decimal"
+                placeholder="0.00"
+                aria-invalid={!!errors.totalBill}
+                {...register('totalBill')}
+              />
+            </FieldRow>
 
             <Button type="submit" className="w-full">
               {t('calculate')}

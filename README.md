@@ -22,10 +22,36 @@ payPerson     = grandTotal * ratioPerson
 The person who did **not** pay transfers their share to the payer, e.g.
 _"B should transfer 235.40 THB to A"_.
 
+The total bill is reference only, but it is not ignored: everything you enter is
+printed on that bill — your own items plus the **whole** price of anything
+shared — so charged up it cannot exceed the total. If it does, the form refuses
+to calculate and says what the items came to, which catches a mistyped price or
+the wrong total. One baht of slack absorbs receipt rounding, and leaving the
+total at `0` means "I don't know it" and skips the check.
+
 Service charge and VAT each have their own switch, both **on** by default.
 Switching one off drops it from the maths and from the summary — the
 percentage box greys out and stops being validated, so a place that charges
 neither (or VAT only) works without clearing the boxes.
+
+## Saved bills
+
+Every calculation is kept in `localStorage` under `bill-history` — there is no
+backend, so history lives on the one device and never leaves it.
+
+- A bill is named from the **Place / note** box, or generated from the items
+  (`Pad Thai +2`) when that is left blank. Both the created and last-edited
+  times are recorded.
+- Dates read as `Today at 14:30`, `Yesterday at 20:05`, `3 days ago`, `last
+  week`, then a plain date beyond a month. Hover one for the full timestamp.
+  `Intl.RelativeTimeFormat` supplies the wording, so Thai needs no strings.
+- **Edit** reopens the whole bill in the form; calculating again overwrites
+  that record instead of adding a twin. **New bill** leaves edit mode.
+- Only the inputs are stored. The amount shown in the list is recalculated
+  from them, so it can never drift from the bill it came from — including the
+  service charge and VAT switches as they were at the time.
+- Unreadable or foreign-version storage is treated as "no history" rather than
+  an error, and the oldest records fall off past `MAX_RECORDS` (200).
 
 ## Stack
 
@@ -48,7 +74,9 @@ npm run lint       # oxlint
 ## Structure
 
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
+- `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema
+- `src/components/bill-history.tsx` — the saved-bills list
 - `src/components/split-meal-calculator.tsx` — form + result card
 - `src/components/ui/` — shadcn components (`switch.tsx` is a dependency-free
   switch built on a native checkbox)

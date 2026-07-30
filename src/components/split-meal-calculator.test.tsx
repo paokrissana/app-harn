@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -11,6 +11,22 @@ function renderCalc() {
       <SplitMealCalculator />
     </LanguageProvider>,
   )
+}
+
+/** The saved-bills list, so amounts there are not confused with the result. */
+function history() {
+  return within(screen.getByRole('list', { name: /saved bills/i }))
+}
+
+/** Fill in a one-item bill and calculate it. */
+async function calculateBill(
+  user: ReturnType<typeof userEvent.setup>,
+  { dish = 'Pad Thai', price = '220' } = {},
+) {
+  await user.type(screen.getByLabelText(/total bill/i), '1177')
+  await user.type(screen.getByLabelText(/item 1 name/i), dish)
+  await user.type(screen.getByLabelText(/item 1 price/i), price)
+  await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 }
 
 describe('SplitMealCalculator (UI)', () => {
@@ -153,6 +169,156 @@ describe('SplitMealCalculator (UI)', () => {
 
     expect((await screen.findAllByText('Required')).length).toBeGreaterThan(0)
     expect(screen.queryByText(/you should pay/i)).not.toBeInTheDocument()
+  })
+
+  it('refuses to calculate when the items cost more than the whole bill', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.type(screen.getByLabelText(/total bill/i), '200')
+    await user.type(screen.getByLabelText(/item 1 price/i), '220')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText(/more than the whole bill/i),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/you should pay/i)).not.toBeInTheDocument()
+    // nothing impossible gets saved either
+    expect(screen.queryByText(/saved bills/i)).not.toBeInTheDocument()
+  })
+
+  it('calculates once the bill covers the items', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.type(screen.getByLabelText(/total bill/i), '200')
+    await user.type(screen.getByLabelText(/item 1 price/i), '220')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+    await screen.findByText(/more than the whole bill/i)
+
+    const total = screen.getByLabelText(/total bill/i)
+    await user.clear(total)
+    await user.type(total, '1177')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText('You should pay 258.94 THB to A'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/more than the whole bill/i)).not.toBeInTheDocument()
+  })
+
+  it('shows saved bills with friendly dates and the full one on hover', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+
+    const when = history().getByText(/today at \d{2}:\d{2}/i)
+    expect(when).toBeInTheDocument()
+    // the exact timestamp is there for hovering
+    expect(when).toHaveAttribute('title', expect.stringMatching(/20\d{2}/))
+  })
+
+  it('saves every calculation to the history list', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    expect(screen.queryByText(/saved bills/i)).not.toBeInTheDocument()
+
+    await calculateBill(user)
+
+    expect(await screen.findByText(/saved bills/i)).toBeInTheDocument()
+    // named after the dish, since the note was left blank
+    expect(history().getByText('Pad Thai')).toBeInTheDocument()
+    expect(history().getByText('258.94 THB')).toBeInTheDocument()
+  })
+
+  it('keeps the note typed for the bill', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.type(screen.getByLabelText(/place \/ note/i), 'Somtam Der')
+    await calculateBill(user)
+
+    expect(await screen.findByText('Somtam Der')).toBeInTheDocument()
+  })
+
+  it('survives a reload, reading the bills back from storage', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+    unmount()
+
+    renderCalc()
+
+    expect(screen.getByText('Pad Thai')).toBeInTheDocument()
+    expect(screen.getByText('258.94 THB')).toBeInTheDocument()
+  })
+
+  it('reopens a saved bill in the form and overwrites it on recalculation', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+
+    await user.click(screen.getByRole('button', { name: /edit: pad thai/i }))
+
+    // the whole bill comes back into the form
+    expect(screen.getByLabelText(/item 1 name/i)).toHaveValue('Pad Thai')
+    expect(screen.getByLabelText(/item 1 price/i)).toHaveValue(220)
+    expect(screen.getByText(/calculating again overwrites it/i)).toBeInTheDocument()
+
+    const price = screen.getByLabelText(/item 1 price/i)
+    await user.clear(price)
+    await user.type(price, '440')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    // updated in place, not added a second time
+    expect(await history().findByText('517.88 THB')).toBeInTheDocument()
+    expect(history().getAllByRole('listitem')).toHaveLength(1)
+    expect(history().getByText(/edited/i)).toBeInTheDocument()
+  })
+
+  it('starts a fresh bill instead of overwriting after New bill', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+
+    await user.click(screen.getByRole('button', { name: /edit: pad thai/i }))
+    await user.click(screen.getByRole('button', { name: /new bill/i }))
+
+    expect(screen.getByLabelText(/item 1 name/i)).toHaveValue('')
+    await calculateBill(user, { dish: 'Khao Man Gai', price: '80' })
+
+    expect(await history().findByText('Khao Man Gai')).toBeInTheDocument()
+    expect(history().getAllByRole('listitem')).toHaveLength(2)
+  })
+
+  it('deletes a single bill', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+
+    await user.click(screen.getByRole('button', { name: /delete: pad thai/i }))
+
+    expect(screen.queryByText('Pad Thai')).not.toBeInTheDocument()
+    expect(screen.queryByText(/saved bills/i)).not.toBeInTheDocument()
+  })
+
+  it('clears the whole history, but only on the second tap', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+
+    await user.click(screen.getByRole('button', { name: /clear all/i }))
+    expect(screen.getByText('Pad Thai')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /tap again to clear/i }))
+    expect(screen.queryByText(/saved bills/i)).not.toBeInTheDocument()
   })
 
   it('shows validation errors when required fields are empty', async () => {

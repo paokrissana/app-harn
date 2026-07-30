@@ -35,6 +35,18 @@ const en = {
   settlement: 'You should pay {amount} to {payer}',
   copyResult: 'Copy result',
   copied: 'Copied',
+  // saved bills
+  billName: 'Place / note',
+  billNameFallback: 'Bill',
+  history: 'Saved bills',
+  historyDesc: 'Every calculation is kept on this device.',
+  edited: 'edited',
+  editBill: 'Edit',
+  deleteBill: 'Delete',
+  clearAll: 'Clear all',
+  confirmClear: 'Tap again to clear',
+  editingBill: 'Editing “{name}” — calculating again overwrites it.',
+  newBill: 'New bill',
   toggleTheme: 'Toggle dark mode',
   toggleLang: 'Switch language',
   switchColour: 'Switch colour',
@@ -46,6 +58,7 @@ const en = {
   atLeast1: 'At least 1',
   platesPositive: 'Your plates must total more than zero',
   addAtLeastOnePlate: 'Add at least one plate',
+  itemsOverBill: 'Items come to {amount} — more than the whole bill',
 }
 
 export type TranslationKey = keyof typeof en
@@ -84,6 +97,17 @@ const th: Record<TranslationKey, string> = {
   settlement: 'คุณต้องจ่าย {amount} ให้ {payer}',
   copyResult: 'คัดลอกผลลัพธ์',
   copied: 'คัดลอกแล้ว',
+  billName: 'ร้าน / บันทึกช่วยจำ',
+  billNameFallback: 'บิล',
+  history: 'บิลที่บันทึกไว้',
+  historyDesc: 'ทุกการคำนวณจะถูกเก็บไว้ในเครื่องนี้',
+  edited: 'แก้ไข',
+  editBill: 'แก้ไข',
+  deleteBill: 'ลบ',
+  clearAll: 'ล้างทั้งหมด',
+  confirmClear: 'แตะอีกครั้งเพื่อล้าง',
+  editingBill: 'กำลังแก้ไข “{name}” — คำนวณอีกครั้งจะเขียนทับบิลนี้',
+  newBill: 'บิลใหม่',
   toggleTheme: 'สลับโหมดมืด',
   toggleLang: 'เปลี่ยนภาษา',
   switchColour: 'เปลี่ยนสี',
@@ -94,6 +118,7 @@ const th: Record<TranslationKey, string> = {
   atLeast1: 'อย่างน้อย 1',
   platesPositive: 'ยอดอาหารต้องมากกว่าศูนย์',
   addAtLeastOnePlate: 'เพิ่มอย่างน้อยหนึ่งรายการ',
+  itemsOverBill: 'รายการรวม {amount} ซึ่งมากกว่ายอดรวมทั้งบิล',
 }
 
 export const translations: Record<Lang, Record<TranslationKey, string>> = {

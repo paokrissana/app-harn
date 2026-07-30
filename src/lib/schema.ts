@@ -1,8 +1,18 @@
 import { z } from 'zod'
 
+import { formatTHB, sumPlates } from '@/lib/calculator'
 import type { TranslationKey } from '@/i18n/translations'
 
-type Translate = (key: TranslationKey) => string
+type Translate = (
+  key: TranslationKey,
+  params?: Record<string, string | number>,
+) => string
+
+/**
+ * How far the entered items may exceed the printed total before it counts as a
+ * mistake. Receipts are often rounded to the nearest baht, so allow one.
+ */
+const ROUNDING_ALLOWANCE = 1
 
 /**
  * Build the payback form schema with translated validation messages.
@@ -91,6 +101,34 @@ export function createPaybackSchema(t: Translate) {
         'serviceChargePct',
       )
       checkPercent(ctx, data.vatEnabled, data.vatPct, 'vatPct')
+
+      /*
+       * Everything entered is printed on that bill — your own items and the
+       * whole price of anything shared, not just your slice of it — so charged
+       * up it cannot come to more than the bill itself. Catches a mistyped
+       * price or the wrong total. Skipped when the total is left at 0, which
+       * means "I don't know it".
+       */
+      const serviceChargePct = data.serviceChargeEnabled
+        ? Number(data.serviceChargePct)
+        : 0
+      const vatPct = data.vatEnabled ? Number(data.vatPct) : 0
+      const percentagesUsable =
+        Number.isFinite(serviceChargePct) && Number.isFinite(vatPct)
+
+      if (data.totalBill > 0 && percentagesUsable) {
+        const entered = sumPlates([...data.items, ...data.sharedItems])
+        const charged =
+          entered * (1 + serviceChargePct / 100) * (1 + vatPct / 100)
+
+        if (charged > data.totalBill + ROUNDING_ALLOWANCE) {
+          ctx.addIssue({
+            code: 'custom',
+            message: t('itemsOverBill', { amount: formatTHB(charged) }),
+            path: ['totalBill'],
+          })
+        }
+      }
     })
     .transform((data) => ({
       ...data,

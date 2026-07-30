@@ -4,7 +4,8 @@ import type { PaybackInput } from './calculator'
 import {
   MAX_RECORDS,
   addRecord,
-  formatDateTime,
+  formatFullDateTime,
+  formatRelative,
   loadHistory,
   recordTotal,
   removeRecord,
@@ -176,12 +177,70 @@ describe('loadHistory / saveHistory', () => {
   })
 })
 
-describe('formatDateTime', () => {
-  it('formats day, month and time', () => {
-    expect(formatDateTime('2026-01-02T09:30:00.000Z', 'en')).toMatch(/2 Jan/)
+describe('formatRelative', () => {
+  const now = new Date('2026-07-30T18:00:00')
+  /** `daysAgo(1)` is yesterday at 14:30 local time. */
+  const daysAgo = (days: number, hour = 14, minute = 30) =>
+    new Date(2026, 6, 30 - days, hour, minute).toISOString()
+
+  it('says today with the time', () => {
+    expect(formatRelative(daysAgo(0), 'en', now)).toBe('today at 14:30')
+  })
+
+  it('says yesterday with the time', () => {
+    expect(formatRelative(daysAgo(1, 20, 5), 'en', now)).toBe(
+      'yesterday at 20:05',
+    )
+  })
+
+  it('counts days within the week', () => {
+    expect(formatRelative(daysAgo(3), 'en', now)).toBe('3 days ago')
+    expect(formatRelative(daysAgo(6), 'en', now)).toBe('6 days ago')
+  })
+
+  it('rolls up into weeks', () => {
+    expect(formatRelative(daysAgo(7), 'en', now)).toBe('last week')
+    expect(formatRelative(daysAgo(13), 'en', now)).toBe('last week')
+    expect(formatRelative(daysAgo(14), 'en', now)).toBe('2 weeks ago')
+    expect(formatRelative(daysAgo(20), 'en', now)).toBe('2 weeks ago')
+  })
+
+  it('falls back to the date beyond a month', () => {
+    expect(formatRelative(daysAgo(40), 'en', now)).toMatch(/20 Jun/)
+  })
+
+  it('includes the year once it is a different one', () => {
+    expect(formatRelative(daysAgo(300), 'en', now)).toMatch(/2025/)
+  })
+
+  it('counts the calendar day, not the last 24 hours', () => {
+    // 00:30 today is only a few hours back but is still "today"
+    expect(formatRelative(daysAgo(0, 0, 30), 'en', now)).toBe('today at 00:30')
+    // 23:30 yesterday is closer in time, yet belongs to yesterday
+    expect(formatRelative(daysAgo(1, 23, 30), 'en', now)).toBe(
+      'yesterday at 23:30',
+    )
+  })
+
+  it('speaks Thai when asked', () => {
+    const thai = formatRelative(daysAgo(1), 'th', now)
+    expect(thai).toMatch(/เมื่อวาน/)
+    expect(thai).toMatch(/14:30/)
   })
 
   it('returns nothing for an unreadable date', () => {
-    expect(formatDateTime('nonsense', 'en')).toBe('')
+    expect(formatRelative('nonsense', 'en', now)).toBe('')
+  })
+})
+
+describe('formatFullDateTime', () => {
+  it('spells the whole timestamp out for a tooltip', () => {
+    const full = formatFullDateTime('2026-07-30T09:30:00', 'en')
+    expect(full).toMatch(/30 July 2026/)
+    expect(full).toMatch(/09:30/)
+  })
+
+  it('returns nothing for an unreadable date', () => {
+    expect(formatFullDateTime('nonsense', 'en')).toBe('')
   })
 })

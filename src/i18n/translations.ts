@@ -58,6 +58,7 @@ const en = {
   atLeast1: 'At least 1',
   platesPositive: 'Your plates must total more than zero',
   addAtLeastOnePlate: 'Add at least one plate',
+  itemsOverBill: 'Items come to {amount} — more than the whole bill',
 }
 
 export type TranslationKey = keyof typeof en
@@ -117,6 +118,7 @@ const th: Record<TranslationKey, string> = {
   atLeast1: 'อย่างน้อย 1',
   platesPositive: 'ยอดอาหารต้องมากกว่าศูนย์',
   addAtLeastOnePlate: 'เพิ่มอย่างน้อยหนึ่งรายการ',
+  itemsOverBill: 'รายการรวม {amount} ซึ่งมากกว่ายอดรวมทั้งบิล',
 }
 
 export const translations: Record<Lang, Record<TranslationKey, string>> = {

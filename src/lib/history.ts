@@ -146,15 +146,67 @@ export function suggestBillName(
   return others > 0 ? `${named.name.trim()} +${others}` : named.name.trim()
 }
 
-/** Day, month and time in the reader's language, e.g. `27 Jul, 14:30`. */
-export function formatDateTime(iso: string, lang: Lang): string {
+function localeOf(lang: Lang): string {
+  return lang === 'th' ? 'th-TH' : 'en-GB'
+}
+
+/** Whole calendar days from now to then — today is 0, yesterday -1. */
+function calendarDaysApart(from: Date, to: Date): number {
+  const midnight = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+
+  return Math.round((midnight(to) - midnight(from)) / 86_400_000)
+}
+
+/**
+ * How long ago a bill was, in words: `today at 14:30`, `yesterday at 20:05`,
+ * `3 days ago`, `last week`, `2 weeks ago`, and a plain date beyond a month.
+ * Intl supplies the wording, so Thai comes for free. Lower case as Intl gives
+ * it — the caller capitalises where the phrase starts a sentence.
+ */
+export function formatRelative(
+  iso: string,
+  lang: Lang,
+  now = new Date(),
+): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
 
-  return new Intl.DateTimeFormat(lang === 'th' ? 'th-TH' : 'en-GB', {
+  const locale = localeOf(lang)
+  const days = calendarDaysApart(now, date)
+  const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+
+  // Today and yesterday carry the time — that is what you actually want to know.
+  if (days === 0 || days === -1) {
+    const time = new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date)
+    const day = relative.format(days, 'day')
+
+    return lang === 'th' ? `${day} ${time}` : `${day} at ${time}`
+  }
+
+  if (days < 0 && days >= -6) return relative.format(days, 'day')
+
+  const weeks = Math.floor(Math.abs(days) / 7)
+  if (days < 0 && weeks <= 4) return relative.format(-weeks, 'week')
+
+  // Older than about a month — or somehow in the future — so just say when.
+  return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  }).format(date)
+}
+
+/** The whole timestamp, spelled out for a tooltip. */
+export function formatFullDateTime(iso: string, lang: Lang): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return new Intl.DateTimeFormat(localeOf(lang), {
+    dateStyle: 'full',
+    timeStyle: 'short',
   }).format(date)
 }

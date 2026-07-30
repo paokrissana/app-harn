@@ -171,6 +171,54 @@ describe('SplitMealCalculator (UI)', () => {
     expect(screen.queryByText(/you should pay/i)).not.toBeInTheDocument()
   })
 
+  it('refuses to calculate when the items cost more than the whole bill', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.type(screen.getByLabelText(/total bill/i), '200')
+    await user.type(screen.getByLabelText(/item 1 price/i), '220')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText(/more than the whole bill/i),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/you should pay/i)).not.toBeInTheDocument()
+    // nothing impossible gets saved either
+    expect(screen.queryByText(/saved bills/i)).not.toBeInTheDocument()
+  })
+
+  it('calculates once the bill covers the items', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.type(screen.getByLabelText(/total bill/i), '200')
+    await user.type(screen.getByLabelText(/item 1 price/i), '220')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+    await screen.findByText(/more than the whole bill/i)
+
+    const total = screen.getByLabelText(/total bill/i)
+    await user.clear(total)
+    await user.type(total, '1177')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText('You should pay 258.94 THB to A'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/more than the whole bill/i)).not.toBeInTheDocument()
+  })
+
+  it('shows saved bills with friendly dates and the full one on hover', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+    await calculateBill(user)
+    await screen.findByText('Pad Thai')
+
+    const when = history().getByText(/today at \d{2}:\d{2}/i)
+    expect(when).toBeInTheDocument()
+    // the exact timestamp is there for hovering
+    expect(when).toHaveAttribute('title', expect.stringMatching(/20\d{2}/))
+  })
+
   it('saves every calculation to the history list', async () => {
     const user = userEvent.setup()
     renderCalc()

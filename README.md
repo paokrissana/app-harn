@@ -22,6 +22,13 @@ payPerson     = grandTotal * ratioPerson
 The person who did **not** pay transfers their share to the payer, e.g.
 _"B should transfer 235.40 THB to A"_.
 
+The total bill is reference only, but it is not ignored: everything you enter is
+printed on that bill — your own items plus the **whole** price of anything
+shared — so charged up it cannot exceed the total. If it does, the form refuses
+to calculate and says what the items came to, which catches a mistyped price or
+the wrong total. One baht of slack absorbs receipt rounding, and leaving the
+total at `0` means "I don't know it" and skips the check.
+
 Service charge and VAT each have their own switch, both **on** by default.
 Switching one off drops it from the maths and from the summary — the
 percentage box greys out and stops being validated, so a place that charges
@@ -35,6 +42,9 @@ backend, so history lives on the one device and never leaves it.
 - A bill is named from the **Place / note** box, or generated from the items
   (`Pad Thai +2`) when that is left blank. Both the created and last-edited
   times are recorded.
+- Dates read as `Today at 14:30`, `Yesterday at 20:05`, `3 days ago`, `last
+  week`, then a plain date beyond a month. Hover one for the full timestamp.
+  `Intl.RelativeTimeFormat` supplies the wording, so Thai needs no strings.
 - **Edit** reopens the whole bill in the form; calculating again overwrites
   that record instead of adding a twin. **New bill** leaves edit mode.
 - Only the inputs are stored. The amount shown in the list is recalculated

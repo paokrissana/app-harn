@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { PencilIcon, Trash2Icon } from 'lucide-react'
 
 import { formatTHB } from '@/lib/calculator'
-import { formatDateTime, recordTotal, type BillRecord } from '@/lib/history'
+import {
+  formatFullDateTime,
+  formatRelative,
+  recordTotal,
+  type BillRecord,
+} from '@/lib/history'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -13,6 +18,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+
+/** Intl hands back "today at 14:30"; this line starts a sentence. */
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
 
 export function BillHistory({
   records,
@@ -62,9 +72,21 @@ export function BillHistory({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{record.name}</p>
                 <p className="text-muted-foreground text-xs">
-                  {formatDateTime(record.createdAt, lang)}
-                  {record.updatedAt !== record.createdAt &&
-                    ` · ${t('edited')} ${formatDateTime(record.updatedAt, lang)}`}
+                  {/* Hover any of these for the exact date and time. */}
+                  <span
+                    className="cursor-help"
+                    title={formatFullDateTime(record.createdAt, lang)}
+                  >
+                    {sentenceCase(formatRelative(record.createdAt, lang))}
+                  </span>
+                  {record.updatedAt !== record.createdAt && (
+                    <span
+                      className="cursor-help"
+                      title={formatFullDateTime(record.updatedAt, lang)}
+                    >
+                      {` · ${t('edited')} ${formatRelative(record.updatedAt, lang)}`}
+                    </span>
+                  )}
                 </p>
               </div>
 

@@ -62,6 +62,8 @@ export function createPaybackSchema(t: Translate) {
 
   return z
     .object({
+      /** Free text — blank is fine, a name gets generated from the items. */
+      name: z.string().trim(),
       totalBill: moneyField,
       items: z.array(plateSchema).min(1, t('addAtLeastOnePlate')),
       sharedItems: z.array(sharedPlateSchema),

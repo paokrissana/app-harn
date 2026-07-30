@@ -1,13 +1,35 @@
-import { useMemo, useState, type ComponentProps, type ReactNode } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
-import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import {
+  CheckIcon,
+  CopyIcon,
+  FilePlus2Icon,
+  PlusIcon,
+  Trash2Icon,
+} from 'lucide-react'
 
 import {
   calculatePayback,
   formatTHB,
+  type PaybackInput,
   type PaybackResult,
 } from '@/lib/calculator'
+import {
+  addRecord,
+  loadHistory,
+  removeRecord,
+  saveHistory,
+  suggestBillName,
+  updateRecord,
+  type BillRecord,
+} from '@/lib/history'
 import {
   createPaybackSchema,
   type PaybackFormInput,
@@ -15,6 +37,7 @@ import {
 } from '@/lib/schema'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
+import { BillHistory } from '@/components/bill-history'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -28,6 +51,39 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
 const PAYER = 'A'
+
+const EMPTY_FORM: PaybackFormInput = {
+  name: '',
+  totalBill: '',
+  items: [{ name: '', price: '' }],
+  sharedItems: [],
+  serviceChargeEnabled: true,
+  serviceChargePct: '10',
+  vatEnabled: true,
+  vatPct: '7',
+}
+
+/** Put a saved bill back into the form — every box takes text. */
+function toFormValues(record: BillRecord): PaybackFormInput {
+  const { input } = record
+  return {
+    name: record.name,
+    totalBill: String(input.totalBill),
+    items: input.items.map((item) => ({
+      name: item.name,
+      price: String(item.price),
+    })),
+    sharedItems: input.sharedItems.map((item) => ({
+      name: item.name,
+      price: String(item.price),
+      shares: String(item.shares),
+    })),
+    serviceChargeEnabled: input.serviceChargeEnabled ?? true,
+    serviceChargePct: String(input.serviceChargePct),
+    vatEnabled: input.vatEnabled ?? true,
+    vatPct: String(input.vatPct),
+  }
+}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
@@ -145,18 +201,11 @@ export function SplitMealCalculator() {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors },
   } = useForm<PaybackFormInput, unknown, PaybackFormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      totalBill: '',
-      items: [{ name: '', price: '' }],
-      sharedItems: [],
-      serviceChargeEnabled: true,
-      serviceChargePct: '10',
-      vatEnabled: true,
-      vatPct: '7',
-    },
+    defaultValues: EMPTY_FORM,
   })
 
   const ownPlates = useFieldArray({ control, name: 'items' })
@@ -167,10 +216,69 @@ export function SplitMealCalculator() {
     name: 'serviceChargeEnabled',
   })
   const vatEnabled = useWatch({ control, name: 'vatEnabled' })
+  const watchedItems = useWatch({ control, name: 'items' })
+  const watchedShared = useWatch({ control, name: 'sharedItems' })
+
+  const [records, setRecords] = useState<BillRecord[]>(loadHistory)
+  /** The saved bill currently open in the form, if any. */
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    saveHistory(records)
+  }, [records])
+
+  const suggestedName = suggestBillName(
+    watchedItems ?? [],
+    watchedShared ?? [],
+    t('billNameFallback'),
+  )
+
+  const editing = records.find((record) => record.id === editingId) ?? null
 
   const onSubmit = (values: PaybackFormOutput) => {
     setResult(calculatePayback(values))
     setCopied(false)
+
+    const input: PaybackInput = {
+      totalBill: values.totalBill,
+      items: values.items,
+      sharedItems: values.sharedItems,
+      serviceChargeEnabled: values.serviceChargeEnabled,
+      serviceChargePct: values.serviceChargePct,
+      vatEnabled: values.vatEnabled,
+      vatPct: values.vatPct,
+    }
+    const name = values.name || suggestedName
+
+    // Reopened bills are overwritten; anything else is a new line in the list.
+    setRecords((current) =>
+      editingId
+        ? updateRecord(current, editingId, input, name)
+        : addRecord(current, input, name),
+    )
+  }
+
+  const handleEditRecord = (record: BillRecord) => {
+    reset(toFormValues(record))
+    setEditingId(record.id)
+    setResult(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleteRecord = (id: string) => {
+    setRecords((current) => removeRecord(current, id))
+    if (id === editingId) setEditingId(null)
+  }
+
+  const handleClearRecords = () => {
+    setRecords([])
+    setEditingId(null)
+  }
+
+  const handleNewBill = () => {
+    reset(EMPTY_FORM)
+    setEditingId(null)
+    setResult(null)
   }
 
   const settlement = result
@@ -199,6 +307,31 @@ export function SplitMealCalculator() {
             noValidate
             className="flex flex-col gap-5"
           >
+            {editing && (
+              <div className="border-primary/20 bg-primary/10 flex items-center gap-3 rounded-lg border p-3">
+                <p className="text-muted-foreground flex-1 text-sm text-balance">
+                  {t('editingBill', { name: editing.name })}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNewBill}
+                >
+                  <FilePlus2Icon />
+                  {t('newBill')}
+                </Button>
+              </div>
+            )}
+
+            <FieldRow label={t('billName')} htmlFor="name">
+              <Input
+                id="name"
+                placeholder={suggestedName}
+                {...register('name')}
+              />
+            </FieldRow>
+
             {/* Your own plates */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -482,6 +615,14 @@ export function SplitMealCalculator() {
           </CardContent>
         </Card>
       )}
+
+      <BillHistory
+        records={records}
+        editingId={editingId}
+        onEdit={handleEditRecord}
+        onDelete={handleDeleteRecord}
+        onClear={handleClearRecords}
+      />
     </div>
   )
 }

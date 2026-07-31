@@ -4,6 +4,9 @@ Work out how much each person owes when **one** person pays the whole
 restaurant bill — including Service Charge and VAT. Frontend only, everything
 runs locally in the browser.
 
+Split Meal, the first of the AppHarn tools — see [VISION.md](VISION.md) for
+where this is going.
+
 ## How it works
 
 Each person is charged in proportion to what they ate:
@@ -51,14 +54,34 @@ backend, so history lives on the one device and never leaves it.
   from them, so it can never drift from the bill it came from — including the
   service charge and VAT switches as they were at the time.
 - Unreadable or foreign-version storage is treated as "no history" rather than
-  an error, and the oldest records fall off past `MAX_RECORDS` (200).
+  an error, and the oldest records fall off past `MAX_RECORDS` (20), quietly.
 
 ## Stack
 
 - React 19 + TypeScript + Vite
+- React Router (routing)
 - Tailwind CSS v4 + shadcn/ui
 - React Hook Form + Zod (validation)
 - Vitest + Testing Library (unit + UI tests)
+
+## Routes
+
+| Path          | Page                                    |
+| ------------- | --------------------------------------- |
+| `/`           | Home — the tool list from `VISION.md`   |
+| `/split-meal` | Split Meal calculator                   |
+| anything else | redirects home                          |
+
+Tools that are not built yet appear on the home page dimmed, badged `Soon`, and
+are not tappable. Adding one means writing the page and flipping its `path` in
+`src/lib/tools.ts`.
+
+GitHub Pages has no server to rewrite unknown paths onto `index.html`, so a
+refresh of `/app-harn/split-meal` would 404. Pages does serve `404.html` for
+anything it cannot find, so the build copies `index.html` to `dist/404.html`
+(see `pagesDeepLinkFallback` in `vite.config.ts`) and every route resolves. The
+HTTP status on a deep link is still 404 even though the page renders — fine for
+people, worth knowing if crawlers ever matter.
 
 ## Scripts
 
@@ -73,6 +96,10 @@ npm run lint       # oxlint
 
 ## Structure
 
+- `src/App.tsx` — routes (`AppRoutes` is exported for tests)
+- `src/components/app-shell.tsx` — chrome shared by every page
+- `src/pages/` — one file per page (`home.tsx`, `split-meal.tsx`)
+- `src/lib/tools.ts` — the tool registry the home page renders
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema

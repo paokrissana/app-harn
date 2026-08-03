@@ -1,45 +1,29 @@
-import { SplitMealCalculator } from '@/components/split-meal-calculator'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { LanguageToggle } from '@/components/language-toggle'
-import { AccentSwitcher } from '@/components/accent-switcher'
-import { Logo } from '@/components/logo'
-import { useI18n } from '@/i18n/context'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+
+import { AppShell } from '@/components/app-shell'
+import { HomePage } from '@/pages/home'
+import { SplitMealPage } from '@/pages/split-meal'
+
+/** The routes alone, so tests can mount them inside a MemoryRouter. */
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route index element={<HomePage />} />
+        <Route path="split-meal" element={<SplitMealPage />} />
+        {/* Anything else — an old link, a typo — lands on the tool list. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  )
+}
 
 function App() {
-  const { t } = useI18n()
-
+  // BASE_URL is "/" in dev and "/app-harn/" in the Pages build.
   return (
-    <div className="relative min-h-svh w-full overflow-hidden">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-primary/15 to-transparent" />
-
-      <div className="relative mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 px-4 py-8 sm:py-12">
-        <header className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <Logo className="size-9" />
-              <h1 className="text-2xl font-extrabold tracking-tight">
-                {t('appName')}
-              </h1>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <LanguageToggle />
-              <ThemeToggle />
-            </div>
-          </div>
-          <p className="text-muted-foreground text-sm text-balance">
-            {t('subtitle')}
-          </p>
-          <div className="flex items-center gap-3 pt-1">
-            <span className="text-muted-foreground text-xs">{t('switchColour')}</span>
-            <AccentSwitcher />
-          </div>
-        </header>
-
-        <main>
-          <SplitMealCalculator />
-        </main>
-      </div>
-    </div>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <AppRoutes />
+    </BrowserRouter>
   )
 }
 

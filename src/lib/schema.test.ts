@@ -17,6 +17,9 @@ const form: PaybackFormInput = {
   serviceChargePct: '10',
   vatEnabled: true,
   vatPct: '7',
+  tipEnabled: false,
+  tipMode: 'percent',
+  tipValue: '10',
 }
 
 /** The messages attached to one field, if the form was rejected. */
@@ -28,6 +31,27 @@ function errorsOn(input: PaybackFormInput, field: string): string[] {
     .filter((issue) => issue.path.join('.') === field)
     .map((issue) => issue.message)
 }
+
+describe('the tip field', () => {
+  it('is not validated while the tip is switched off', () => {
+    expect(errorsOn({ ...form, tipValue: '' }, 'tipValue')).toEqual([])
+  })
+
+  it('is required once the tip is switched on', () => {
+    expect(
+      errorsOn({ ...form, tipEnabled: true, tipValue: '' }, 'tipValue'),
+    ).toEqual(['required'])
+  })
+
+  it('must be a non-negative number', () => {
+    expect(
+      errorsOn({ ...form, tipEnabled: true, tipValue: 'abc' }, 'tipValue'),
+    ).toEqual(['numbersOnly'])
+    expect(
+      errorsOn({ ...form, tipEnabled: true, tipValue: '-5' }, 'tipValue'),
+    ).toEqual(['cannotBeNegative'])
+  })
+})
 
 describe('items against the total bill', () => {
   it('accepts a bill that covers the items', () => {
@@ -78,6 +102,19 @@ describe('items against the total bill', () => {
 
   it('skips the check when the total is left at zero', () => {
     expect(errorsOn({ ...form, totalBill: '0' }, 'totalBill')).toEqual([])
+  })
+
+  it('never counts a tip against the bill — a tip is not printed on it', () => {
+    // 220 of food fits a 258 bill; a 500 baht tip on top must not trip it
+    const tipped: PaybackFormInput = {
+      ...form,
+      totalBill: '258',
+      tipEnabled: true,
+      tipMode: 'amount',
+      tipValue: '500',
+    }
+    expect(errorsOn(tipped, 'totalBill')).toEqual([])
+    expect(schema.safeParse(tipped).success).toBe(true)
   })
 
   it('says nothing about the total while a percentage is unusable', () => {

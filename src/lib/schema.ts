@@ -54,8 +54,8 @@ export function createPaybackSchema(t: Translate) {
    */
   const percentField = z.string().trim()
 
-  /** Validate one percentage field, but only while its toggle is on. */
-  const checkPercent = (
+  /** Validate one charge field, but only while its toggle is on. */
+  const checkCharge = (
     ctx: z.RefinementCtx,
     enabled: boolean,
     value: string,
@@ -81,6 +81,9 @@ export function createPaybackSchema(t: Translate) {
       serviceChargePct: percentField,
       vatEnabled: z.boolean(),
       vatPct: percentField,
+      tipEnabled: z.boolean(),
+      tipMode: z.enum(['percent', 'amount']),
+      tipValue: percentField,
     })
     .refine(
       (data) => {
@@ -94,13 +97,14 @@ export function createPaybackSchema(t: Translate) {
       { error: t('platesPositive'), path: ['items'] },
     )
     .superRefine((data, ctx) => {
-      checkPercent(
+      checkCharge(
         ctx,
         data.serviceChargeEnabled,
         data.serviceChargePct,
         'serviceChargePct',
       )
-      checkPercent(ctx, data.vatEnabled, data.vatPct, 'vatPct')
+      checkCharge(ctx, data.vatEnabled, data.vatPct, 'vatPct')
+      checkCharge(ctx, data.tipEnabled, data.tipValue, 'tipValue')
 
       /*
        * Everything entered is printed on that bill — your own items and the
@@ -108,6 +112,9 @@ export function createPaybackSchema(t: Translate) {
        * up it cannot come to more than the bill itself. Catches a mistyped
        * price or the wrong total. Skipped when the total is left at 0, which
        * means "I don't know it".
+       *
+       * A tip is deliberately left out: it is money added on top of the bill,
+       * not something printed on it, so it must not trip this check.
        */
       const serviceChargePct = data.serviceChargeEnabled
         ? Number(data.serviceChargePct)
@@ -137,6 +144,7 @@ export function createPaybackSchema(t: Translate) {
         ? Number(data.serviceChargePct)
         : 0,
       vatPct: data.vatEnabled ? Number(data.vatPct) : 0,
+      tipValue: data.tipEnabled ? Number(data.tipValue) : 0,
     }))
 }
 

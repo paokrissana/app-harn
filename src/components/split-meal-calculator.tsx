@@ -20,6 +20,7 @@ import {
   formatTHB,
   type PaybackInput,
   type PaybackResult,
+  type TipMode,
 } from '@/lib/calculator'
 import {
   addRecord,
@@ -61,6 +62,10 @@ const EMPTY_FORM: PaybackFormInput = {
   serviceChargePct: '10',
   vatEnabled: true,
   vatPct: '7',
+  // Off by default: unlike service charge and VAT, most bills have no tip.
+  tipEnabled: false,
+  tipMode: 'percent',
+  tipValue: '10',
 }
 
 /** Put a saved bill back into the form — every box takes text. */
@@ -82,6 +87,12 @@ function toFormValues(record: BillRecord): PaybackFormInput {
     serviceChargePct: String(input.serviceChargePct),
     vatEnabled: input.vatEnabled ?? true,
     vatPct: String(input.vatPct),
+    // Bills saved before tips existed simply have none.
+    tipEnabled: input.tipEnabled ?? false,
+    tipMode: input.tipMode ?? 'percent',
+    tipValue: input.tipEnabled
+      ? String(input.tipValue ?? 0)
+      : EMPTY_FORM.tipValue,
   }
 }
 
@@ -125,6 +136,7 @@ function ChargeRow({
   enabled,
   error,
   toggle,
+  control,
   children,
 }: {
   label: string
@@ -132,11 +144,13 @@ function ChargeRow({
   enabled: boolean
   error?: string
   toggle: ReactNode
+  /** Optional extra control between the label and the box, e.g. % / ฿. */
+  control?: ReactNode
   children: ReactNode
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {toggle}
         <Label
           htmlFor={htmlFor}
@@ -147,9 +161,55 @@ function ChargeRow({
         >
           {label}
         </Label>
+        {control}
         <div className="w-24">{children}</div>
       </div>
       {error && <p className="text-destructive text-right text-sm">{error}</p>}
+    </div>
+  )
+}
+
+/** Switch a tip between a percentage of the bill and a flat sum in Baht. */
+function TipModeToggle({
+  mode,
+  disabled,
+  onChange,
+}: {
+  mode: TipMode
+  disabled: boolean
+  onChange: (mode: TipMode) => void
+}) {
+  const { t } = useI18n()
+
+  const option = (value: TipMode, symbol: string, label: string) => (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={mode === value}
+      disabled={disabled}
+      onClick={() => onChange(value)}
+      className={cn(
+        'h-7 w-8 text-sm font-medium transition-colors disabled:opacity-50',
+        mode === value
+          ? 'bg-primary text-primary-foreground'
+          : 'text-muted-foreground hover:bg-accent',
+      )}
+    >
+      {symbol}
+    </button>
+  )
+
+  return (
+    <div
+      role="group"
+      aria-label={t('tipMode')}
+      className={cn(
+        'border-input flex shrink-0 overflow-hidden rounded-md border',
+        disabled && 'opacity-50',
+      )}
+    >
+      {option('percent', '%', t('tipAsPercent'))}
+      {option('amount', '฿', t('tipAsAmount'))}
     </div>
   )
 }
@@ -202,6 +262,7 @@ export function SplitMealCalculator() {
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<PaybackFormInput, unknown, PaybackFormOutput>({
     resolver: zodResolver(schema),
@@ -216,6 +277,8 @@ export function SplitMealCalculator() {
     name: 'serviceChargeEnabled',
   })
   const vatEnabled = useWatch({ control, name: 'vatEnabled' })
+  const tipEnabled = useWatch({ control, name: 'tipEnabled' })
+  const tipMode = useWatch({ control, name: 'tipMode' })
   const watchedItems = useWatch({ control, name: 'items' })
   const watchedShared = useWatch({ control, name: 'sharedItems' })
 
@@ -247,6 +310,9 @@ export function SplitMealCalculator() {
       serviceChargePct: values.serviceChargePct,
       vatEnabled: values.vatEnabled,
       vatPct: values.vatPct,
+      tipEnabled: values.tipEnabled,
+      tipMode: values.tipMode,
+      tipValue: values.tipValue,
     }
     const name = values.name || suggestedName
 
@@ -525,6 +591,48 @@ export function SplitMealCalculator() {
                   {...register('vatPct')}
                 />
               </ChargeRow>
+
+              <ChargeRow
+                label={t('tip')}
+                htmlFor="tipValue"
+                enabled={tipEnabled}
+                error={errors.tipValue?.message}
+                toggle={
+                  <Switch
+                    aria-label={t('includeTip')}
+                    {...register('tipEnabled')}
+                  />
+                }
+                control={
+                  <TipModeToggle
+                    mode={tipMode}
+                    disabled={!tipEnabled}
+                    onChange={(mode) => setValue('tipMode', mode)}
+                  />
+                }
+              >
+                {tipMode === 'amount' ? (
+                  <MoneyInput
+                    id="tipValue"
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    disabled={!tipEnabled}
+                    aria-invalid={!!errors.tipValue}
+                    {...register('tipValue')}
+                  />
+                ) : (
+                  <Input
+                    id="tipValue"
+                    type="number"
+                    step="any"
+                    inputMode="decimal"
+                    disabled={!tipEnabled}
+                    aria-invalid={!!errors.tipValue}
+                    {...register('tipValue')}
+                  />
+                )}
+              </ChargeRow>
             </div>
 
             {/* Last, like the bottom line of the receipt — reference only */}
@@ -565,7 +673,11 @@ export function SplitMealCalculator() {
 
             <div className="border-border border-t" />
 
-            <div className="flex flex-col gap-2">
+            <div
+              role="group"
+              aria-label={t('breakdown')}
+              className="flex flex-col gap-2"
+            >
               <SummaryRow
                 label={t('yourPlates')}
                 value={formatTHB(result.yourOwnFood)}
@@ -588,6 +700,9 @@ export function SplitMealCalculator() {
               )}
               {result.vatApplied && (
                 <SummaryRow label={t('vatRow')} value={formatTHB(result.vat)} />
+              )}
+              {result.tipApplied && (
+                <SummaryRow label={t('tipRow')} value={formatTHB(result.tip)} />
               )}
             </div>
 

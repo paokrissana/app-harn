@@ -5,11 +5,11 @@ const STORAGE_KEY = 'bill-history'
 const STORAGE_VERSION = 1
 
 /**
- * Every calculation is saved, so the list grows quickly. Past this the oldest
- * records fall off — roughly a year of daily lunches, well inside the ~5MB
- * localStorage budget.
+ * Every calculation is saved, so the list grows quickly. Keep it short enough
+ * to take in at a glance — past this the oldest bills fall off quietly, with
+ * no warning and no way back.
  */
-export const MAX_RECORDS = 200
+export const MAX_RECORDS = 20
 
 /** One saved bill: what was entered, plus when it was kept and last changed. */
 export interface BillRecord {

@@ -119,6 +119,60 @@ describe('calculatePayback', () => {
     expect(r.youPay).toBe(220)
   })
 
+  it('adds no tip unless one is asked for', () => {
+    const r = calculatePayback(base)
+    expect(r.tipApplied).toBe(false)
+    expect(r.tip).toBe(0)
+    expect(r.youPay).toBeCloseTo(r.charged, 5)
+  })
+
+  it('takes a percentage tip from the charged total, not the food', () => {
+    const r = calculatePayback({
+      ...base,
+      tipEnabled: true,
+      tipMode: 'percent',
+      tipValue: 10,
+    })
+    expect(r.charged).toBeCloseTo(258.94, 5)
+    expect(r.tip).toBeCloseTo(25.894, 4) // 10% of 258.94, not of 220
+    expect(r.youPay).toBeCloseTo(284.834, 4)
+  })
+
+  it('adds a flat tip as typed', () => {
+    const r = calculatePayback({
+      ...base,
+      tipEnabled: true,
+      tipMode: 'amount',
+      tipValue: 50,
+    })
+    expect(r.tip).toBe(50)
+    expect(r.youPay).toBeCloseTo(308.94, 5)
+  })
+
+  it('tips on the food alone when both charges are off', () => {
+    const r = calculatePayback({
+      ...base,
+      serviceChargeEnabled: false,
+      vatEnabled: false,
+      tipEnabled: true,
+      tipMode: 'percent',
+      tipValue: 10,
+    })
+    expect(r.charged).toBe(220)
+    expect(r.tip).toBeCloseTo(22, 5)
+    expect(r.youPay).toBeCloseTo(242, 5)
+  })
+
+  it('ignores a tip left switched off, whatever is in the box', () => {
+    const r = calculatePayback({
+      ...base,
+      tipEnabled: false,
+      tipMode: 'amount',
+      tipValue: 500,
+    })
+    expect(r.tip).toBe(0)
+  })
+
   it('ignores the percentages entirely while a charge is switched off', () => {
     const r = calculatePayback({
       ...base,

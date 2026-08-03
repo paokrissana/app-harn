@@ -18,6 +18,11 @@ function history() {
   return within(screen.getByRole('list', { name: /saved bills/i }))
 }
 
+/** The result breakdown, so its rows are not confused with the form labels. */
+function breakdown() {
+  return within(screen.getByRole('group', { name: /breakdown/i }))
+}
+
 /** Fill in a one-item bill and calculate it. */
 async function calculateBill(
   user: ReturnType<typeof userEvent.setup>,
@@ -114,8 +119,8 @@ describe('SplitMealCalculator (UI)', () => {
       await screen.findByText('You should pay 220.00 THB to A'),
     ).toBeInTheDocument()
     // and the charge rows disappear from the summary
-    expect(screen.queryByText('Service charge')).not.toBeInTheDocument()
-    expect(screen.queryByText('VAT')).not.toBeInTheDocument()
+    expect(breakdown().queryByText('Service charge')).not.toBeInTheDocument()
+    expect(breakdown().queryByText('VAT')).not.toBeInTheDocument()
   })
 
   it('keeps VAT when only service charge is switched off', async () => {
@@ -134,8 +139,8 @@ describe('SplitMealCalculator (UI)', () => {
     expect(
       await screen.findByText('You should pay 235.40 THB to A'),
     ).toBeInTheDocument()
-    expect(screen.getByText('VAT')).toBeInTheDocument()
-    expect(screen.queryByText('Service charge')).not.toBeInTheDocument()
+    expect(breakdown().getByText('VAT')).toBeInTheDocument()
+    expect(breakdown().queryByText('Service charge')).not.toBeInTheDocument()
   })
 
   it('does not demand a percentage for a charge that is switched off', async () => {
@@ -169,6 +174,76 @@ describe('SplitMealCalculator (UI)', () => {
 
     expect((await screen.findAllByText('Required')).length).toBeGreaterThan(0)
     expect(screen.queryByText(/you should pay/i)).not.toBeInTheDocument()
+  })
+
+  it('leaves the tip switched off and out of the total', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    expect(screen.getByRole('switch', { name: /add a tip/i })).not.toBeChecked()
+    expect(screen.getByLabelText(/^tip$/i)).toBeDisabled()
+
+    await calculateBill(user)
+
+    // 220 + 10% + 7%, no tip
+    expect(
+      await screen.findByText('You should pay 258.94 THB to A'),
+    ).toBeInTheDocument()
+    expect(breakdown().queryByText('Tip')).not.toBeInTheDocument()
+  })
+
+  it('adds a percentage tip on top of the charged total', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.click(screen.getByRole('switch', { name: /add a tip/i }))
+    await calculateBill(user)
+
+    // 10% of 258.94 = 25.89, so 284.83 — not 10% of the 220 of food
+    expect(
+      await screen.findByText('You should pay 284.83 THB to A'),
+    ).toBeInTheDocument()
+    expect(breakdown().getByText('Tip')).toBeInTheDocument()
+  })
+
+  it('switches the tip to a flat amount in Baht', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.click(screen.getByRole('switch', { name: /add a tip/i }))
+    await user.click(screen.getByRole('button', { name: /^baht$/i }))
+
+    const tip = screen.getByLabelText(/^tip$/i)
+    await user.clear(tip)
+    await user.type(tip, '50')
+    await calculateBill(user)
+
+    expect(
+      await screen.findByText('You should pay 308.94 THB to A'),
+    ).toBeInTheDocument()
+  })
+
+  it('does not let a tip trip the over-the-bill guard', async () => {
+    const user = userEvent.setup()
+    renderCalc()
+
+    await user.click(screen.getByRole('switch', { name: /add a tip/i }))
+    await user.click(screen.getByRole('button', { name: /^baht$/i }))
+    const tip = screen.getByLabelText(/^tip$/i)
+    await user.clear(tip)
+    await user.type(tip, '500')
+
+    // a bill of 258 covers the 220 of food; the 500 tip is not on that bill
+    await user.type(screen.getByLabelText(/total bill/i), '258')
+    await user.type(screen.getByLabelText(/item 1 price/i), '220')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText('You should pay 758.94 THB to A'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/more than the whole bill/i),
+    ).not.toBeInTheDocument()
   })
 
   it('refuses to calculate when the items cost more than the whole bill', async () => {

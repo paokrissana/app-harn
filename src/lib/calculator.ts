@@ -12,6 +12,9 @@ export interface SharedPlate {
   shares: number
 }
 
+/** A tip is either a percentage of the charged total, or a flat sum in Baht. */
+export type TipMode = 'percent' | 'amount'
+
 /** Validated inputs from the payback form. */
 export interface PaybackInput {
   /** Whole group's bill total — reference only, not used in the math. */
@@ -28,6 +31,12 @@ export interface PaybackInput {
   vatEnabled?: boolean
   /** VAT, as a percentage (e.g. 7 for 7%). */
   vatPct: number
+  /** Whether a tip is added. Defaults to false — most bills have none. */
+  tipEnabled?: boolean
+  /** Whether `tipValue` is a percentage or a flat number of Baht. */
+  tipMode?: TipMode
+  /** A percentage of the charged total, or an amount in Baht. */
+  tipValue?: number
 }
 
 /** What the user owes the person who paid. */
@@ -47,7 +56,12 @@ export interface PaybackResult {
   /** Whether VAT was applied — false when switched off. */
   vatApplied: boolean
   vat: number
-  /** Final amount to pay back. */
+  /** Everything the bill itself asks for: food, service charge and VAT. */
+  charged: number
+  /** Whether a tip was added — false when switched off. */
+  tipApplied: boolean
+  tip: number
+  /** Final amount to pay back, tip included. */
   youPay: number
 }
 
@@ -70,11 +84,15 @@ export function sumSharedPlates(items: SharedPlate[]): number {
  * Work out what the user owes the person who paid the group bill: their own
  * plates plus their slice of any shared plates, with service charge and VAT
  * added on top. Either charge can be switched off; both apply by default.
+ *
+ * A tip is extra, on top of everything the bill asked for — a percentage tip
+ * is taken from the charged total, so it grows with service charge and VAT.
  */
 export function calculatePayback(input: PaybackInput): PaybackResult {
   const { totalBill, items, sharedItems, serviceChargePct, vatPct } = input
   const serviceChargeApplied = input.serviceChargeEnabled ?? true
   const vatApplied = input.vatEnabled ?? true
+  const tipApplied = input.tipEnabled ?? false
 
   const yourOwnFood = sumPlates(items)
   const yourSharedFood = sumSharedPlates(sharedItems)
@@ -84,7 +102,14 @@ export function calculatePayback(input: PaybackInput): PaybackResult {
     : 0
   const subtotal = yourFood + serviceCharge
   const vat = vatApplied ? subtotal * (vatPct / 100) : 0
-  const youPay = subtotal + vat
+  const charged = subtotal + vat
+
+  const tipValue = input.tipValue ?? 0
+  const tip = tipApplied
+    ? input.tipMode === 'amount'
+      ? tipValue
+      : charged * (tipValue / 100)
+    : 0
 
   return {
     totalBill,
@@ -96,7 +121,10 @@ export function calculatePayback(input: PaybackInput): PaybackResult {
     subtotal,
     vatApplied,
     vat,
-    youPay,
+    charged,
+    tipApplied,
+    tip,
+    youPay: charged + tip,
   }
 }
 

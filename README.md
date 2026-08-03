@@ -12,14 +12,13 @@ where this is going.
 Each person is charged in proportion to what they ate:
 
 ```
-foodTotal     = foodA + foodB
-serviceCharge = foodTotal * serviceCharge%
-subtotal      = foodTotal + serviceCharge
-vat           = subtotal  * vat%
-grandTotal    = subtotal  + vat
-
-ratioPerson   = personFood / foodTotal
-payPerson     = grandTotal * ratioPerson
+yourFood      = your items + your slice of anything shared
+serviceCharge = yourFood * serviceCharge%
+subtotal      = yourFood + serviceCharge
+vat           = subtotal * vat%
+charged       = subtotal + vat          # what the bill asks of you
+tip           = charged  * tip%         # or a flat amount in Baht
+youPay        = charged  + tip
 ```
 
 The person who did **not** pay transfers their share to the payer, e.g.
@@ -31,6 +30,13 @@ shared — so charged up it cannot exceed the total. If it does, the form refuse
 to calculate and says what the items came to, which catches a mistyped price or
 the wrong total. One baht of slack absorbs receipt rounding, and leaving the
 total at `0` means "I don't know it" and skips the check.
+
+A **tip** can be added on top, as a percentage or a flat number of Baht — tap
+`%` / `฿` on the tip row to switch. A percentage tip is taken from the *charged*
+total, so it grows with service charge and VAT. The tip switch defaults to
+**off**: unlike service charge and VAT it is not on most receipts, and it is
+deliberately excluded from the check above, since a tip is money added on top of
+the bill rather than something printed on it.
 
 Service charge and VAT each have their own switch, both **on** by default.
 Switching one off drops it from the maths and from the summary — the

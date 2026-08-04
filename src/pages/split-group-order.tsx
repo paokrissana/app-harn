@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon, TriangleAlertIcon } from 'lucide-react'
 
 import { useI18n } from '@/i18n/context'
 import { SplitGroupOrder } from '@/features/split-group-order/split-group-order'
@@ -24,6 +24,15 @@ export function SplitGroupOrderPage() {
         <p className="text-muted-foreground text-sm text-balance">
           {t('toolGroupOrderDesc')}
         </p>
+      </div>
+
+      {/* Says so before anyone trusts a number, not after. */}
+      <div
+        role="status"
+        className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300"
+      >
+        <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+        <p className="text-balance">{t('betaNotice')}</p>
       </div>
 
       <SplitGroupOrder />

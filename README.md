@@ -1,13 +1,17 @@
-# Split Meal Calculator
+# AppHarn
 
-Work out how much each person owes when **one** person pays the whole
-restaurant bill — including Service Charge and VAT. Frontend only, everything
-runs locally in the browser.
+Calculators for splitting expenses. Frontend only — everything runs locally in
+the browser, no login, no backend. See [PROJECT.md](PROJECT.md) for the vision,
+architecture and roadmap.
 
-Split Meal, the first of the AppHarn tools — see [VISION.md](VISION.md) for
-where this is going.
+Two tools so far: **Split Meal**, for what you owe when somebody else paid the
+whole bill, and **Split Group Order**, for what everyone owes you when you
+ordered delivery for the group.
 
-## How it works
+## Split Meal
+
+Work out how much you owe when **one** person pays the whole restaurant bill —
+including Service Charge, VAT and a tip.
 
 Each person is charged in proportion to what they ate:
 
@@ -43,6 +47,31 @@ Switching one off drops it from the maths and from the summary — the
 percentage box greys out and stops being validated, so a place that charges
 neither (or VAT only) works without clearing the boxes.
 
+## Split Group Order
+
+One person orders delivery for a group; everyone else owes them. Laid out the
+way a delivery receipt is — people first, then lines filed under whoever tapped
+them in the app.
+
+The point that shapes it: **who added a line and who shares it are different
+facts**. Gyoza tapped by Alex but halved with Bianca sits under Alex and costs
+them 60 each. So each line records `addedBy` (where it appears in the form) and
+`sharedBy` (where the money goes), and you tick the sharers.
+
+- The **delivery fee splits evenly** — it buys the trip, not the food.
+- **Discounts split in proportion** to what each person ordered, and there can
+  be several. Every percentage comes off the *original* food total, so two
+  promos do not compound — that is how the receipt lists them.
+- **Delivery promos are their own thing**, attached to the fee. A free-delivery
+  voucher cancels the fee before it is split and can never reach the food.
+- Everyone but the payer is **rounded to whole Baht**, since they are the ones
+  transferring; the payer carries the odd change, so the shares always add up to
+  exactly what was paid.
+
+`src/shared/lib/bill.ts` is the engine — a `Bill` in, per-person totals and
+transfers out. Framework independent and unit tested, with the real Grab order
+above as its main case.
+
 ## Saved bills
 
 Every calculation is kept in `localStorage` under `bill-history` — there is no
@@ -74,8 +103,9 @@ backend, so history lives on the one device and never leaves it.
 
 | Path          | Page                                    |
 | ------------- | --------------------------------------- |
-| `/`           | Home — the tool list from `VISION.md`   |
+| `/`           | Home — the tool list from `PROJECT.md`  |
 | `/split-meal` | Split Meal calculator                   |
+| `/split-group-order` | Split Group Order                |
 | anything else | redirects home                          |
 
 Tools that are not built yet appear on the home page dimmed, badged `Soon`, and
@@ -104,8 +134,11 @@ npm run lint       # oxlint
 
 - `src/App.tsx` — routes (`AppRoutes` is exported for tests)
 - `src/components/app-shell.tsx` — chrome shared by every page
-- `src/pages/` — one file per page (`home.tsx`, `split-meal.tsx`)
+- `src/pages/` — one file per page (`home.tsx`, `split-meal.tsx`,
+  `split-group-order.tsx`)
 - `src/lib/tools.ts` — the tool registry the home page renders
+- `src/shared/lib/bill.ts` — the shared calculation engine (unit tested)
+- `src/features/split-group-order/` — its form, schema and mapping to a `Bill`
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema

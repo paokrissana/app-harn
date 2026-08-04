@@ -1,4 +1,5 @@
 import { calculatePayback, type PaybackInput } from '@/lib/calculator'
+import { newId } from '@/shared/lib/id'
 import type { Lang } from '@/i18n/translations'
 
 const STORAGE_KEY = 'bill-history'
@@ -76,12 +77,6 @@ export function saveHistory(records: BillRecord[]): void {
   } catch {
     // Out of quota or private mode: history is a nicety, not worth a crash.
   }
-}
-
-function newId(): string {
-  return typeof crypto?.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.round(Math.random() * 1e9)}`
 }
 
 /** Add a bill to the front of the list, dropping the oldest past the cap. */

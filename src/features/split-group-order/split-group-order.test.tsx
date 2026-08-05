@@ -110,7 +110,9 @@ describe('Split Group Order', () => {
     await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 
     // food 450, delivery 45, discounts 75 → 420 paid by Alex
-    expect(await screen.findByText(/420\.00 THB/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/order total: 420\.00 THB/i),
+    ).toBeInTheDocument()
     expect(owed().getByText('165.00 THB')).toBeInTheDocument() // Bianca
     expect(owed().getByText('123.00 THB')).toBeInTheDocument() // Carlos
     expect(owed().getByText('132.00 THB')).toBeInTheDocument() // Alex, who paid
@@ -140,7 +142,9 @@ describe('Split Group Order', () => {
 
     await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 
-    expect(await screen.findByText(/100\.00 THB/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/order total: 100\.00 THB/i),
+    ).toBeInTheDocument()
     const lines = owed().getAllByRole('listitem')
     expect(lines).toHaveLength(2)
     for (const line of lines) expect(line).toHaveTextContent('50.00 THB')
@@ -177,9 +181,75 @@ describe('Split Group Order', () => {
     await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 
     // 200 of food, no delivery, nothing off the items
-    expect(await screen.findByText(/200\.00 THB/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/order total: 200\.00 THB/i),
+    ).toBeInTheDocument()
     const lines = owed().getAllByRole('listitem')
     for (const line of lines) expect(line).toHaveTextContent('100.00 THB')
+  })
+
+  it('shows the working behind each person’s figure', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await enterTheRealOrder(user)
+    await addDiscount(user, 1, 'percent', '10')
+    await addDiscount(user, 2, 'amount', '30')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    // Bianca: 180 of food, 15 of delivery, 30 off
+    const bianca = (await owed().findByText(/^Bianca$/)).closest('li')!
+    expect(bianca).toHaveTextContent('food 180.00')
+    expect(bianca).toHaveTextContent('delivery 15.00')
+    expect(bianca).toHaveTextContent('discount −30.00')
+    expect(bianca).toHaveTextContent('165.00 THB')
+  })
+
+  it('leaves the discount out of the working when there is none', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await enterTheRealOrder(user)
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    const lines = owed().getAllByRole('listitem')
+    for (const line of lines) expect(line).not.toHaveTextContent('discount')
+  })
+
+  it('says the shares add up to what was paid', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await enterTheRealOrder(user)
+    await addDiscount(user, 1, 'percent', '10')
+    await addDiscount(user, 2, 'amount', '30')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText(/adds up to 420\.00 THB — what you paid/i),
+    ).toBeInTheDocument()
+  })
+
+  it('does not claim to add up when only part of the group is listed', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await enterTheRealOrder(user)
+    const headcount = screen.getByLabelText(/people in the group/i)
+    await user.clear(headcount)
+    await user.type(headcount, '7')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(await screen.findByText(/of 7 who ordered/i)).toBeInTheDocument()
+    expect(screen.queryByText(/what you paid/i)).not.toBeInTheDocument()
+  })
+
+  it('warns that a capped promo goes in as an amount', () => {
+    renderOrder()
+
+    expect(
+      screen.getByText(/goes in as ฿50, not 10%/i),
+    ).toBeInTheDocument()
   })
 
   it('counts the group as the people listed, until told otherwise', async () => {

@@ -1,3 +1,5 @@
+import { formatBaht } from '@/shared/lib/money'
+
 /** A single dish the user ordered for themselves. */
 export interface Plate {
   name: string
@@ -130,9 +132,5 @@ export function calculatePayback(input: PaybackInput): PaybackResult {
 
 /** Format a number as Thai Baht, e.g. `1234.5` -> `"1,234.50 THB"`. */
 export function formatTHB(amount: number): string {
-  const formatted = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
-  return `${formatted} THB`
+  return formatBaht(amount)
 }

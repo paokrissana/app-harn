@@ -3,8 +3,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
-import { formatTHB } from '@/lib/calculator'
 import { calculateBill, type BillResult } from '@/shared/lib/bill'
+import { formatBaht } from '@/shared/lib/money'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
 import {
@@ -233,11 +233,11 @@ export function SplitGroupOrder() {
 
   const summary = result
     ? [
-        `${t('goOrderTotal')}: ${formatTHB(result.grandTotal)}`,
+        `${t('goOrderTotal')}: ${formatBaht(result.grandTotal)}`,
         ...owedLines.map((share) =>
           t('goCopySummary', {
             name: nameOf(share.participantId),
-            amount: formatTHB(share.total),
+            amount: formatBaht(share.total),
           }),
         ),
       ].join('\n')
@@ -493,6 +493,9 @@ export function SplitGroupOrder() {
 
           <div className="flex flex-col gap-2">
             <Label>{t('goDiscounts')}</Label>
+            <p className="text-muted-foreground text-xs">
+              {t('goDiscountHint')}
+            </p>
             {discounts.fields.map((field, index) => (
               <PromoRow
                 key={field.id}
@@ -539,7 +542,7 @@ export function SplitGroupOrder() {
           <CardHeader>
             <CardTitle>{t('goResult')}</CardTitle>
             <CardDescription>
-              {t('goOrderTotal')}: {formatTHB(result.grandTotal)}
+              {t('goOrderTotal')}: {formatBaht(result.grandTotal)}
             </CardDescription>
             {headcount > named.length && (
               <CardDescription>
@@ -556,25 +559,48 @@ export function SplitGroupOrder() {
                 <li
                   key={share.participantId}
                   className={cn(
-                    'flex items-center justify-between gap-3 rounded-lg border p-3',
+                    'flex flex-col gap-1 rounded-lg border p-3',
                     share.participantId === payerId && 'bg-primary/5',
                   )}
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                    {nameOf(share.participantId)}
-                    {share.participantId === payerId && (
-                      <span className="text-muted-foreground font-normal">
-                        {' '}
-                        — {t('goPaid')}
-                      </span>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {nameOf(share.participantId)}
+                      {share.participantId === payerId && (
+                        <span className="text-muted-foreground font-normal">
+                          {' '}
+                          — {t('goPaid')}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums">
+                      {formatBaht(share.total)}
+                    </span>
+                  </div>
+
+                  {/* The working, so a wrong figure can be spotted. */}
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {t('goRowFood')} {formatBaht(share.food, false)}
+                    {' · '}
+                    {t('goRowDelivery')} {formatBaht(share.fees, false)}
+                    {share.discount > 0 && (
+                      <>
+                        {' · '}
+                        {t('goRowDiscount')} −{formatBaht(share.discount, false)}
+                      </>
                     )}
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums">
-                    {formatTHB(share.total)}
-                  </span>
+                  </p>
                 </li>
               ))}
             </ul>
+
+            {headcount <= named.length && (
+              <p className="text-muted-foreground text-xs">
+                {t('goReconciles', {
+                  amount: formatBaht(result.grandTotal),
+                })}
+              </p>
+            )}
 
             <Button
               type="button"

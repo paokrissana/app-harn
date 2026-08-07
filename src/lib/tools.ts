@@ -1,8 +1,10 @@
 import {
   BikeIcon,
   CarTaxiFrontIcon,
+  HandPlatterIcon,
   HouseIcon,
   LuggageIcon,
+  PartyPopperIcon,
   ShoppingBagIcon,
   UtensilsCrossedIcon,
   ZapIcon,
@@ -38,6 +40,20 @@ export const TOOLS: Tool[] = [
     nameKey: 'toolGroupOrderName',
     descKey: 'toolGroupOrderDesc',
     beta: true,
+  },
+  {
+    id: 'split-group-meal',
+    path: null,
+    icon: HandPlatterIcon,
+    nameKey: 'toolGroupMealName',
+    descKey: 'toolGroupMealDesc',
+  },
+  {
+    id: 'split-hang-out',
+    path: null,
+    icon: PartyPopperIcon,
+    nameKey: 'toolHangOutName',
+    descKey: 'toolHangOutDesc',
   },
   {
     id: 'split-taxi',

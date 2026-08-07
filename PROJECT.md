@@ -16,7 +16,6 @@ Examples:
 - Split Meal
 - Split Group Order
 - Split Group Meal
-- Split Hang Out
 - Split Trip
 - Split Taxi
 - Split Hotel

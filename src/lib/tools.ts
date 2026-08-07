@@ -4,7 +4,6 @@ import {
   HandPlatterIcon,
   HouseIcon,
   LuggageIcon,
-  PartyPopperIcon,
   ShoppingBagIcon,
   UtensilsCrossedIcon,
   ZapIcon,
@@ -47,13 +46,6 @@ export const TOOLS: Tool[] = [
     icon: HandPlatterIcon,
     nameKey: 'toolGroupMealName',
     descKey: 'toolGroupMealDesc',
-  },
-  {
-    id: 'split-hang-out',
-    path: null,
-    icon: PartyPopperIcon,
-    nameKey: 'toolHangOutName',
-    descKey: 'toolHangOutDesc',
   },
   {
     id: 'split-taxi',

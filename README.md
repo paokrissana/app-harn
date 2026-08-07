@@ -9,10 +9,9 @@ whole bill, and **Split Group Order**, for what everyone owes you when you
 ordered delivery for the group. They are deliberately one-sided in opposite
 directions — money out versus money back.
 
-Queued next, and on the home page as dimmed cards: **Split Group Meal** (the
-dine-in counterpart to Group Order — one restaurant bill, dishes round the
-table) and **Split Hang Out** (several bills across one night out, different
-people paying each time). See [PROJECT.md](PROJECT.md) for the rest.
+Queued next, and on the home page as a dimmed card: **Split Group Meal** — the
+dine-in counterpart to Group Order, where one restaurant bill covers dishes
+going round the table. See [PROJECT.md](PROJECT.md) for the rest.
 
 ## Split Meal
 

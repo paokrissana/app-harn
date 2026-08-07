@@ -6,7 +6,13 @@ architecture and roadmap.
 
 Two tools so far: **Split Meal**, for what you owe when somebody else paid the
 whole bill, and **Split Group Order**, for what everyone owes you when you
-ordered delivery for the group.
+ordered delivery for the group. They are deliberately one-sided in opposite
+directions — money out versus money back.
+
+Queued next, and on the home page as dimmed cards: **Split Group Meal** (the
+dine-in counterpart to Group Order — one restaurant bill, dishes round the
+table) and **Split Hang Out** (several bills across one night out, different
+people paying each time). See [PROJECT.md](PROJECT.md) for the rest.
 
 ## Split Meal
 
@@ -68,9 +74,29 @@ them 60 each. So each line records `addedBy` (where it appears in the form) and
   transferring; the payer carries the odd change, so the shares always add up to
   exactly what was paid.
 
+### Shared plates
+
+Each person's total is one number, and it hides the only part that actually
+needs working out. You already know what your own lines cost — the delivery app
+prints them. What you cannot do in your head is your cut of a plate that sits
+under somebody else's name.
+
+So underneath the totals, a **Shared plates** section lists every line with more
+than one name on it: the plate and its price, everyone in on it, and what each
+of the others owes whoever it sits under. Plates nobody shared are left out —
+there is nothing to settle on a line you ate alone.
+
+The person a plate sits under is never billed for it, and need not be among the
+sharers at all: a cake ordered for the other two leaves both of them owing the
+person who tapped it, and that person owing nothing.
+
+These figures are at **menu price**. Fees and promos belong to the totals above,
+which remain the authoritative settlement — the section says so, or a discount
+would make it look like the same food is being charged twice.
+
 `src/shared/lib/bill.ts` is the engine — a `Bill` in, per-person totals and
-transfers out. Framework independent and unit tested, with the real Grab order
-above as its main case.
+transfers out, plus `sharedPlates()` for the breakdown above. Framework
+independent and unit tested, with the real Grab order above as its main case.
 
 ## Saved bills
 

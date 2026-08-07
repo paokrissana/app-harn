@@ -95,6 +95,32 @@ export interface Transfer {
   amount: number
 }
 
+/** One person's cut of a plate they did not order themselves. */
+export interface PlateShare {
+  participantId: string
+  amount: number
+}
+
+/**
+ * A plate more than one person is in on, and what the others owe for it.
+ *
+ * Your own lines you already know the price of; the shared ones are the part
+ * that needs working out, so they are worth pulling out and naming separately.
+ * Amounts are at menu price — fees and promos belong to the totals, not here.
+ */
+export interface SharedPlate {
+  itemId: string
+  title: string
+  /** The whole plate, as the receipt prices it. */
+  amount: number
+  /** Whose part of the receipt it sits under, so who the others pay back. */
+  addedBy: string
+  /** Everyone splitting it, `addedBy` included. */
+  sharers: string[]
+  /** What each of the others owes `addedBy` — an even cut, one line each. */
+  shares: PlateShare[]
+}
+
 export interface BillResult {
   foodTotal: number
   /** The listed people's share of the fees, after each fee's own promos. */
@@ -127,6 +153,36 @@ export function foodFor(participantId: string, items: BillItem[]): number {
     if (!sharers.includes(participantId)) return sum
     return sum + item.amount / sharers.length
   }, 0)
+}
+
+/**
+ * The plates with more than one name on them, each with what the others owe
+ * whoever ordered it. Plates nobody shared are left out — there is nothing to
+ * settle on a line you ate alone.
+ *
+ * `addedBy` need not be among the sharers: a plate filed under Alex but ticked
+ * for Bianca and Carlos alone leaves both of them owing Alex, and Alex nothing.
+ */
+export function sharedPlates(items: BillItem[]): SharedPlate[] {
+  return items.flatMap((item) => {
+    const sharers = sharersOf(item)
+    if (sharers.length < 2) return []
+
+    const each = item.amount / sharers.length
+
+    return [
+      {
+        itemId: item.id,
+        title: item.title,
+        amount: item.amount,
+        addedBy: item.addedBy,
+        sharers,
+        shares: sharers
+          .filter((participantId) => participantId !== item.addedBy)
+          .map((participantId) => ({ participantId, amount: each })),
+      },
+    ]
+  })
 }
 
 /**

@@ -205,6 +205,42 @@ describe('Split Group Order', () => {
     expect(bianca).toHaveTextContent('165.00 THB')
   })
 
+  it('spells out who owes what for each shared plate', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await enterTheRealOrder(user)
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    const plates = (await screen.findByText('Shared plates')).closest('section')!
+
+    // The gyoza sits under Alex at 120, so Bianca owes him half of it.
+    const gyoza = within(plates).getByText(/Gyoza/).closest('li')!
+    expect(gyoza).toHaveTextContent('120.00 · Alex + Bianca')
+    expect(gyoza).toHaveTextContent('Bianca’s share')
+    expect(gyoza).toHaveTextContent('60.00')
+
+    // The soup runs the other way: under Carlos at 60, Bianca owes him 30.
+    const soup = within(plates).getByText(/Soup/).closest('li')!
+    expect(soup).toHaveTextContent('60.00 · Carlos + Bianca')
+    expect(soup).toHaveTextContent('Bianca’s share')
+    expect(soup).toHaveTextContent('30.00')
+  })
+
+  it('says nothing about shared plates when nothing was shared', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await nameThem(user, ['Alex', 'Bianca'])
+    await addItem(user, 'Alex', 1, 'Fried rice', '80')
+    await addItem(user, 'Bianca', 2, 'Chicken rice', '90')
+    await user.type(screen.getByLabelText(/delivery fee/i), '0')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    await screen.findByText(/order total/i)
+    expect(screen.queryByText('Shared plates')).not.toBeInTheDocument()
+  })
+
   it('leaves the discount out of the working when there is none', async () => {
     const user = userEvent.setup()
     renderOrder()

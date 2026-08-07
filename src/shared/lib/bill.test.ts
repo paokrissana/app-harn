@@ -6,6 +6,7 @@ import {
   feeAfterPromos,
   foodFor,
   foodTotal,
+  sharedPlates,
   type Bill,
 } from './bill'
 
@@ -379,5 +380,58 @@ describe('calculateBill, edge cases', () => {
       payerId: 'a',
     }
     expect(calculateBill(nobody).participants).toEqual([])
+  })
+})
+
+describe('sharedPlates', () => {
+  it('leaves out the plates nobody shared', () => {
+    expect(sharedPlates(grabOrder.items).map((plate) => plate.title)).toEqual([
+      'Gyoza',
+      'Soup',
+    ])
+  })
+
+  it('bills the other sharers, never the one it sits under', () => {
+    const [gyoza, soup] = sharedPlates(grabOrder.items)
+
+    // Alex's gyoza, halved with Bianca: she owes him, he owes nobody.
+    expect(gyoza.addedBy).toBe('alex')
+    expect(gyoza.shares).toEqual([{ participantId: 'bianca', amount: 60 }])
+
+    // The soup sits under Carlos, so the same half runs the other way.
+    expect(soup.addedBy).toBe('carlos')
+    expect(soup.shares).toEqual([{ participantId: 'bianca', amount: 30 }])
+  })
+
+  it('keeps every sharer in the heading, the owner included', () => {
+    const [gyoza] = sharedPlates(grabOrder.items)
+    expect(gyoza.sharers).toEqual(['alex', 'bianca'])
+    expect(gyoza.amount).toBe(120)
+  })
+
+  it('charges everyone when the plate is not shared by its owner', () => {
+    // Alex orders a cake for the other two and eats none of it himself.
+    const cake = sharedPlates([
+      {
+        id: '1',
+        title: 'Cake',
+        amount: 90,
+        addedBy: 'alex',
+        sharedBy: ['bianca', 'carlos'],
+      },
+    ])
+
+    expect(cake[0].shares).toEqual([
+      { participantId: 'bianca', amount: 45 },
+      { participantId: 'carlos', amount: 45 },
+    ])
+  })
+
+  it('adds a plate up to what it cost, across everyone in on it', () => {
+    for (const plate of sharedPlates(grabOrder.items)) {
+      const each = plate.amount / plate.sharers.length
+      const owed = plate.shares.reduce((sum, share) => sum + share.amount, 0)
+      expect(owed).toBeCloseTo(plate.amount - each)
+    }
   })
 })

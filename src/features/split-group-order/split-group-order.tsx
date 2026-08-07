@@ -3,7 +3,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
-import { calculateBill, type BillResult } from '@/shared/lib/bill'
+import {
+  calculateBill,
+  sharedPlates,
+  type BillResult,
+  type SharedPlate,
+} from '@/shared/lib/bill'
 import { formatBaht } from '@/shared/lib/money'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
@@ -166,7 +171,13 @@ function Section({
 
 export function SplitGroupOrder() {
   const { t } = useI18n()
-  const [result, setResult] = useState<BillResult | null>(null)
+  // Kept together so the totals and the plates behind them can never drift.
+  const [outcome, setOutcome] = useState<{
+    result: BillResult
+    plates: SharedPlate[]
+  } | null>(null)
+  const result = outcome?.result ?? null
+  const plates = outcome?.plates ?? []
   const [copied, setCopied] = useState(false)
 
   const schema = useMemo(() => createGroupOrderSchema(t), [t])
@@ -205,14 +216,15 @@ export function SplitGroupOrder() {
     named.find((person) => person.id === id)?.name ?? ''
 
   const onSubmit = (values: GroupOrderFormOutput) => {
-    setResult(calculateBill(toBill(values)))
+    const bill = toBill(values)
+    setOutcome({ result: calculateBill(bill), plates: sharedPlates(bill.items) })
     setCopied(false)
   }
 
   const removePerson = (personId: string) => {
     // Their lines and every reference to them have to go at the same time.
     reset(withoutPerson(getValues(), personId))
-    setResult(null)
+    setOutcome(null)
   }
 
   const addPerson = () => {
@@ -600,6 +612,52 @@ export function SplitGroupOrder() {
                   amount: formatBaht(result.grandTotal),
                 })}
               </p>
+            )}
+
+            {/*
+              The totals above answer "what do I owe in all"; this answers the
+              part you cannot work out in your head — your cut of a plate that
+              went on somebody else's name.
+            */}
+            {plates.length > 0 && (
+              <section className="flex flex-col gap-2 border-t pt-3">
+                <h3 className="text-sm font-medium">{t('goSharedPlates')}</h3>
+
+                <ul className="flex flex-col gap-2">
+                  {plates.map((plate) => (
+                    <li key={plate.itemId} className="flex flex-col gap-0.5">
+                      <p className="text-xs font-medium">
+                        {plate.title.trim() === '' ? t('plate') : plate.title}
+                        <span className="text-muted-foreground font-normal tabular-nums">
+                          {' '}
+                          {formatBaht(plate.amount, false)} ·{' '}
+                          {plate.sharers.map(nameOf).join(' + ')}
+                        </span>
+                      </p>
+
+                      {plate.shares.map((share) => (
+                        <p
+                          key={share.participantId}
+                          className="flex items-center justify-between gap-3 text-xs"
+                        >
+                          <span className="text-muted-foreground min-w-0 flex-1 truncate">
+                            {t('goSharedPlateShare', {
+                              name: nameOf(share.participantId),
+                            })}
+                          </span>
+                          <span className="shrink-0 tabular-nums">
+                            {formatBaht(share.amount, false)}
+                          </span>
+                        </p>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-muted-foreground text-xs">
+                  {t('goSharedPlatesNote')}
+                </p>
+              </section>
             )}
 
             <Button

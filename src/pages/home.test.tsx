@@ -46,6 +46,31 @@ describe('home page', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('flags Split Group Order as still being worked on', () => {
+    renderAt('/')
+
+    const card = screen.getByRole('link', { name: /split group order/i })
+    expect(within(card).getByText(/^beta$/i)).toBeInTheDocument()
+    // the finished tool carries no such label
+    const meal = screen.getByRole('link', { name: /split meal/i })
+    expect(within(meal).queryByText(/^beta$/i)).not.toBeInTheDocument()
+  })
+
+  it('warns on the group order page itself, before anything is entered', async () => {
+    renderAt('/split-group-order')
+
+    expect(
+      screen.getByText(/check the numbers before you send them/i),
+    ).toBeInTheDocument()
+  })
+
+  it('does not warn on the finished tool', () => {
+    renderAt('/split-meal')
+    expect(
+      screen.queryByText(/check the numbers before you send them/i),
+    ).not.toBeInTheDocument()
+  })
+
   it('marks the unbuilt tools as coming soon', () => {
     renderAt('/')
 

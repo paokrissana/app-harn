@@ -8,6 +8,29 @@ import { cn } from '@/lib/utils'
 const CARD =
   'bg-card flex w-full items-center gap-3 rounded-xl border p-4 shadow-sm min-h-[4.5rem]'
 
+/**
+ * A small label on a tool card. Amber for beta rather than the theme's primary,
+ * which changes with the colour switcher and would read as a highlight instead
+ * of a caution. Letter spacing is English-only — it breaks up Thai clusters.
+ */
+function Badge({ tone, children }: { tone: 'soon' | 'beta'; children: string }) {
+  const { lang } = useI18n()
+
+  return (
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[0.625rem] font-semibold whitespace-nowrap uppercase',
+        lang === 'en' && 'tracking-wide',
+        tone === 'beta'
+          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+          : 'bg-muted text-muted-foreground',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
 /** A tool tile — a link once the tool exists, otherwise a dimmed "Soon" card. */
 function ToolCard({ tool }: { tool: Tool }) {
   const { t } = useI18n()
@@ -22,11 +45,8 @@ function ToolCard({ tool }: { tool: Tool }) {
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex flex-wrap items-center gap-2">
           <span className="leading-tight font-semibold">{t(tool.nameKey)}</span>
-          {!tool.path && (
-            <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tracking-wide whitespace-nowrap uppercase">
-              {t('soon')}
-            </span>
-          )}
+          {!tool.path && <Badge tone="soon">{t('soon')}</Badge>}
+          {tool.path && tool.beta && <Badge tone="beta">{t('beta')}</Badge>}
         </span>
         <span className="text-muted-foreground text-sm text-balance">
           {t(tool.descKey)}

@@ -1,5 +1,7 @@
 import {
+  BikeIcon,
   CarTaxiFrontIcon,
+  HandPlatterIcon,
   HouseIcon,
   LuggageIcon,
   ShoppingBagIcon,
@@ -17,9 +19,11 @@ export interface Tool {
   icon: LucideIcon
   nameKey: TranslationKey
   descKey: TranslationKey
+  /** Usable, but the maths is still being worked on — says so on the card. */
+  beta?: boolean
 }
 
-/** Every tool from VISION.md, built or not, in the order the home page lists them. */
+/** Every tool from PROJECT.md, built or not, in the order the home page lists them. */
 export const TOOLS: Tool[] = [
   {
     id: 'split-meal',
@@ -27,6 +31,21 @@ export const TOOLS: Tool[] = [
     icon: UtensilsCrossedIcon,
     nameKey: 'toolMealName',
     descKey: 'toolMealDesc',
+  },
+  {
+    id: 'split-group-order',
+    path: '/split-group-order',
+    icon: BikeIcon,
+    nameKey: 'toolGroupOrderName',
+    descKey: 'toolGroupOrderDesc',
+    beta: true,
+  },
+  {
+    id: 'split-group-meal',
+    path: null,
+    icon: HandPlatterIcon,
+    nameKey: 'toolGroupMealName',
+    descKey: 'toolGroupMealDesc',
   },
   {
     id: 'split-taxi',

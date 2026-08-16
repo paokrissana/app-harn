@@ -20,7 +20,6 @@ import {
   formatTHB,
   type PaybackInput,
   type PaybackResult,
-  type TipMode,
 } from '@/lib/calculator'
 import {
   addRecord,
@@ -39,6 +38,7 @@ import {
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
 import { BillHistory } from '@/components/bill-history'
+import { ValueKindToggle } from '@/shared/components/value-kind-toggle'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -165,51 +165,6 @@ function ChargeRow({
         <div className="w-24">{children}</div>
       </div>
       {error && <p className="text-destructive text-right text-sm">{error}</p>}
-    </div>
-  )
-}
-
-/** Switch a tip between a percentage of the bill and a flat sum in Baht. */
-function TipModeToggle({
-  mode,
-  disabled,
-  onChange,
-}: {
-  mode: TipMode
-  disabled: boolean
-  onChange: (mode: TipMode) => void
-}) {
-  const { t } = useI18n()
-
-  const option = (value: TipMode, symbol: string, label: string) => (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={mode === value}
-      disabled={disabled}
-      onClick={() => onChange(value)}
-      className={cn(
-        'h-7 w-8 text-sm font-medium transition-colors disabled:opacity-50',
-        mode === value
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:bg-accent',
-      )}
-    >
-      {symbol}
-    </button>
-  )
-
-  return (
-    <div
-      role="group"
-      aria-label={t('tipMode')}
-      className={cn(
-        'border-input flex shrink-0 overflow-hidden rounded-md border',
-        disabled && 'opacity-50',
-      )}
-    >
-      {option('percent', '%', t('tipAsPercent'))}
-      {option('amount', '฿', t('tipAsAmount'))}
     </div>
   )
 }
@@ -604,9 +559,10 @@ export function SplitMealCalculator() {
                   />
                 }
                 control={
-                  <TipModeToggle
-                    mode={tipMode}
+                  <ValueKindToggle
+                    kind={tipMode}
                     disabled={!tipEnabled}
+                    label={t('tipMode')}
                     onChange={(mode) => setValue('tipMode', mode)}
                   />
                 }

@@ -4,14 +4,16 @@ Calculators for splitting expenses. Frontend only — everything runs locally in
 the browser, no login, no backend. See [PROJECT.md](PROJECT.md) for the vision,
 architecture and roadmap.
 
-Two tools so far: **Split Meal**, for what you owe when somebody else paid the
-whole bill, and **Split Group Order**, for what everyone owes you when you
-ordered delivery for the group. They are deliberately one-sided in opposite
-directions — money out versus money back.
+Three tools so far:
 
-Queued next, and on the home page as a dimmed card: **Split Group Meal** — the
-dine-in counterpart to Group Order, where one restaurant bill covers dishes
-going round the table. See [PROJECT.md](PROJECT.md) for the rest.
+- **Split Meal** — what you owe when somebody else paid the whole bill.
+- **Split Group Order** — what everyone owes you when you ordered delivery for
+  the group.
+- **Split Group Meal** — the dine-in case: one restaurant bill, dishes going
+  round the table.
+
+The first two are deliberately one-sided in opposite directions — money out
+versus money back. See [PROJECT.md](PROJECT.md) for what is still to come.
 
 ## Split Meal
 
@@ -97,6 +99,35 @@ would make it look like the same food is being charged twice.
 transfers out, plus `sharedPlates()` for the breakdown above. Framework
 independent and unit tested, with the real Grab order above as its main case.
 
+## Split Group Meal
+
+Everyone at one restaurant table, one bill, one person settling it. The dine-in
+counterpart to Split Group Order — and a separate tool rather than a mode,
+because the two have **opposite defaults**.
+
+A delivery receipt already files every line under whoever tapped it, so there
+sharing is the exception. A restaurant bill has no such structure: it is one
+list of dishes, most of them for the table. So here **every dish starts shared
+by everyone**, and the work is tapping a name *off* the one dish somebody ate
+alone. Get that backwards and a table of eight costs eight taps per dish.
+
+- **Service charge and VAT** are proportional — they scale with what each person
+  ate, unlike a delivery fee which buys the trip and splits per head. VAT is
+  worked out on the food *and* the service charge, matching the receipt, so the
+  two cannot collapse into one combined percentage. Each has its own switch.
+- **The total on the bill is cross-checked.** Everything typed in is printed on
+  that bill, so charged up it cannot exceed it. This is what catches a mistyped
+  price or a dish entered twice. One baht of slack absorbs receipt rounding, and
+  leaving it at `0` means "I have not got the bill" and skips the check.
+- Adding somebody puts them on every dish the whole table was already sharing;
+  removing them takes them off everything, and a dish only they were eating goes
+  with them.
+- Every dish is filed under the payer, because on a restaurant bill it really is.
+
+`src/features/split-group-meal/` holds the form, schema and mapping. The engine
+is the same `src/shared/lib/bill.ts` as Split Group Order — the charges are just
+`Fee` entries with `split: 'proportional'`.
+
 ## Saved bills
 
 Every calculation is kept in `localStorage` under `bill-history` — there is no
@@ -131,6 +162,7 @@ backend, so history lives on the one device and never leaves it.
 | `/`           | Home — the tool list from `PROJECT.md`  |
 | `/split-meal` | Split Meal calculator                   |
 | `/split-group-order` | Split Group Order                |
+| `/split-group-meal` | Split Group Meal                  |
 | anything else | redirects home                          |
 
 Tools that are not built yet appear on the home page dimmed, badged `Soon`, and
@@ -164,6 +196,7 @@ npm run lint       # oxlint
 - `src/lib/tools.ts` — the tool registry the home page renders
 - `src/shared/lib/bill.ts` — the shared calculation engine (unit tested)
 - `src/features/split-group-order/` — its form, schema and mapping to a `Bill`
+- `src/features/split-group-meal/` — the same, for one restaurant bill
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema

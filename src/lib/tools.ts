@@ -42,10 +42,11 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'split-group-meal',
-    path: null,
+    path: '/split-group-meal',
     icon: HandPlatterIcon,
     nameKey: 'toolGroupMealName',
     descKey: 'toolGroupMealDesc',
+    beta: true,
   },
   {
     id: 'split-taxi',

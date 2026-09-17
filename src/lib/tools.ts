@@ -34,6 +34,13 @@ export const TOOLS: Tool[] = [
     descKey: 'toolMealDesc',
   },
   {
+    id: 'percentage',
+    path: '/percentage',
+    icon: PercentIcon,
+    nameKey: 'toolPercentageName',
+    descKey: 'toolPercentageDesc',
+  },
+  {
     id: 'split-group-order',
     path: '/split-group-order',
     icon: BikeIcon,
@@ -76,13 +83,6 @@ export const TOOLS: Tool[] = [
     icon: ShoppingBagIcon,
     nameKey: 'toolShoppingName',
     descKey: 'toolShoppingDesc',
-  },
-  {
-    id: 'percentage',
-    path: '/percentage',
-    icon: PercentIcon,
-    nameKey: 'toolPercentageName',
-    descKey: 'toolPercentageDesc',
   },
   {
     id: 'split-utilities',

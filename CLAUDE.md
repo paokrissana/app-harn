@@ -32,20 +32,26 @@ actually work. There is no third document.
 
 Three tools are built and live:
 
+Listed in the order the home page shows them — the finished tools first, then
+the two still in beta.
+
 | Tool | Route | What it answers |
 | --- | --- | --- |
 | Split Meal | `/split-meal` | What *I* owe when somebody else paid the whole bill |
-| Split Group Order | `/split-group-order` | What everyone owes *me* after I ordered delivery |
-| Split Group Meal | `/split-group-meal` | Everyone's share of one restaurant bill |
 | Percentage Calculator | `/percentage` | A percentage, a discount, a rise, or one amount as a percentage of another |
+| Split Group Order *(beta)* | `/split-group-order` | What everyone owes *me* after I ordered delivery |
+| Split Group Meal *(beta)* | `/split-group-meal` | Everyone's share of one restaurant bill |
 
 Five more appear on the home page as dimmed "coming soon" cards: Split Taxi,
 Split Trip, Split Rent, Split Shopping, Split Utilities.
 
-The first three split a bill between people; the Percentage Calculator is the
+Three of them split a bill between people; the Percentage Calculator is the
 first of the standalone calculators. Once there are two or three of those, the
 home page will want grouping — one flat list stops reading well when the cards
 answer different kinds of question.
+
+Order is not alphabetical or chronological: a tool nobody has to distrust comes
+before one wearing a beta badge, and a card nobody can tap comes last.
 
 Split Meal and Split Group Order point in **opposite directions** — money out
 versus money back. That is deliberate and is what distinguishes them.

@@ -59,12 +59,10 @@ fees than the spec calls for.
 
 ### Next
 
-1. **SEO pass** — per-route titles and descriptions. The Percentage Calculator
-   is live now, so the terms in §9 finally have pages to land on.
-2. **Finish Split Group Order** — service fee, small-order fee, tip, and the
+1. **Finish Split Group Order** — service fee, small-order fee, tip, and the
    Equal and Payer-Only discount strategies. The engine already splits a fee
    evenly or proportionally, so these are rows in a form, not new maths.
-3. **Journey Split** — segment-based fare splitting (see below).
+2. **Journey Split** — segment-based fare splitting (see below).
 
 ### Later
 
@@ -115,6 +113,12 @@ drift has been observed. Revisit only if a real discrepancy appears.
 figures will disagree once informal sharing is applied — it splits delivery
 gross and cannot know who shared what. Matching Grab would mean collecting more
 than the bill. The order total is the only figure that must agree.
+
+**Thai is the default language.** Not a guess about the visitor: a crawler
+never taps the toggle, so the default decides the only language that reaches an
+indexed page — and every search AppHarn is meant to be found by is Thai. One URL
+can carry one language, and this is the one that matters. Separate `/th/` URLs
+with `hreflang` are the eventual refinement, not a prerequisite.
 
 **A calculator with two boxes has no Calculate button.** The Percentage
 Calculator answers live as you type; the split tools keep their button because
@@ -237,8 +241,19 @@ Feature pages should target real searches, most of them Thai:
 80% ของ 1500 · ลด 60% เหลือเท่าไหร่ · ค่าแท็กซี่หารกัน
 ```
 
-Currently every route serves one static `<title>App Harn</title>` with no
-description. That is the gap.
+Each route now carries its own title and description, in `src/lib/seo.ts`, and
+they are **baked into the served HTML at build time** — not only set by React
+after load. `vite.config.ts` writes `dist/<route>/index.html` for every indexed
+route, which also means a deep link answers **HTTP 200** instead of the 404
+status the `404.html` fallback used to return. A `robots.txt` and `sitemap.xml`
+are generated from the same list.
+
+Only the head is pre-rendered. The body is identical on every route and has no
+server data to wait for, so rendering it would be machinery for no gain.
+
+`seo.ts` is deliberately **import-free** so the build config can read it without
+dragging the app's path aliases into its module graph. It declares its own
+language union; `seo.test.ts` fails to compile if that drifts from `Lang`.
 
 ---
 

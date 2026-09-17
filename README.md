@@ -183,6 +183,40 @@ backend, so history lives on the one device and never leaves it.
 - Unreadable or foreign-version storage is treated as "no history" rather than
   an error, and the oldest records fall off past `MAX_RECORDS` (20), quietly.
 
+## Search and sharing
+
+Each route has its own title and description in `src/lib/seo.ts`, in both
+languages, written for the searches AppHarn exists to answer — `หารค่าอาหาร`,
+`หารค่า GrabFood`, `80% ของ 1500`.
+
+Two things make them count:
+
+- **Thai is the default language.** A crawler never taps the toggle, so the
+  default decides the only language that ever reaches an indexed page. With
+  English as the default, none of those words appeared anywhere on the site.
+- **Every route's head is baked into real HTML at build time.**
+  `prerenderRouteHeads` in `vite.config.ts` writes `dist/<route>/index.html` for
+  each indexed route. Because the file genuinely exists, GitHub Pages answers
+  **200** rather than the 404 status the `404.html` fallback returns — and the
+  title, description, canonical and OG tags are in the markup before any
+  JavaScript runs.
+
+Only the head is generated. The body is the same on every route and React fills
+it in on load, so pre-rendering it would be machinery for no gain — there is no
+server data to wait for.
+
+At runtime `src/components/page-meta.tsx` keeps the head in step with the router
+and the language toggle, using React 19's native metadata hoisting — no helmet
+library. `<html lang>` is set by hand, since React does not own that node.
+
+`robots.txt` and `sitemap.xml` are generated from the same route list, so a new
+tool with a `seo.ts` entry appears in both without anything else being touched.
+
+`seo.ts` is deliberately import-free: `vite.config.ts` reads it at build time,
+and an aliased import would drag the app's path mapping into the build config's
+resolution. It declares its own language union, and `seo.test.ts` fails to
+compile if that ever drifts from the app's `Lang`.
+
 ## Stack
 
 - React 19 + TypeScript + Vite

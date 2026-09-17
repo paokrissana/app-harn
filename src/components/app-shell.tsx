@@ -4,6 +4,7 @@ import { useI18n } from '@/i18n/context'
 import { AccentSwitcher } from '@/components/accent-switcher'
 import { LanguageToggle } from '@/components/language-toggle'
 import { Logo } from '@/components/logo'
+import { PageMeta } from '@/components/page-meta'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 /**
@@ -16,6 +17,7 @@ export function AppShell() {
 
   return (
     <div className="relative min-h-svh w-full overflow-hidden">
+      <PageMeta />
       <div className="from-primary/15 pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b to-transparent" />
 
       <div className="relative mx-auto flex min-h-svh w-full max-w-lg flex-col gap-6 px-4 py-8 sm:py-12">

@@ -21,19 +21,12 @@ import {
   MODE_FIELDS,
   MODE_LABEL,
   MODE_QUESTION,
+  MODE_TAB,
   parseNumber,
   validate,
   type PercentageErrors,
   type Translate,
 } from './schema'
-
-/** The tab label for each mode — short, since four sit in one row on a phone. */
-const MODE_TABS: Record<PercentageMode, string> = {
-  of: '% of',
-  discount: '−%',
-  increase: '+%',
-  relation: '%',
-}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
@@ -105,7 +98,7 @@ export function PercentageCalculator() {
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {MODE_TABS[option]}
+            {t(MODE_TAB[option])}
           </button>
         ))}
       </div>

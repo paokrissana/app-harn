@@ -29,11 +29,26 @@ export interface BillItem {
   sharedBy: string[]
 }
 
+/**
+ * How a promo is shared out between people.
+ *
+ * `proportional` — by what each person ordered. The default, and what a
+ * receipt implies: a percentage off the order is already worth more to whoever
+ * ordered more.
+ * `equal` — the same off everybody, whatever they ordered. A flat voucher the
+ * group decided to share evenly.
+ * `payer` — entirely the payer's. Their loyalty points, their credit, their
+ * benefit; nobody else's bill should move.
+ */
+export type DiscountAllocation = 'proportional' | 'equal' | 'payer'
+
 /** A promo, as a percentage of what it comes off or as a flat sum of Baht. */
 export interface Discount {
   id: string
   kind: 'percent' | 'amount'
   value: number
+  /** Defaults to `proportional` when left out. */
+  allocation?: DiscountAllocation
 }
 
 /**
@@ -195,20 +210,60 @@ export function sharedPlates(items: BillItem[]): SharedPlate[] {
  * of a bigger group: a percentage off their food is already their share of it,
  * but a flat 30 off a seven-person order is not.
  */
+export function discountValue(
+  discount: Discount,
+  base: number,
+  flatShare = 1,
+): number {
+  return discount.kind === 'percent'
+    ? base * (discount.value / 100)
+    : discount.value * flatShare
+}
+
 export function discountTotal(
   discounts: Discount[],
   base: number,
   flatShare = 1,
 ): number {
   const off = discounts.reduce(
-    (sum, discount) =>
-      sum +
-      (discount.kind === 'percent'
-        ? base * (discount.value / 100)
-        : discount.value * flatShare),
+    (sum, discount) => sum + discountValue(discount, base, flatShare),
     0,
   )
   return Math.min(off, base)
+}
+
+/**
+ * How much of each promo lands on one person.
+ *
+ * Every promo is allocated by its own strategy and the results are added up, so
+ * a proportional voucher and a payer-only credit can sit on the same order
+ * without interfering. `ratio` is that person's share of the food.
+ *
+ * The caller scales the result if the promos together came to more than the
+ * food — `discountTotal` caps the sum, and the per-person shares have to be
+ * brought down by the same factor or they would no longer add up to it.
+ */
+function discountFor(
+  participantId: string,
+  discounts: Discount[],
+  base: number,
+  flatShare: number,
+  ratio: number,
+  listed: number,
+  payerId: string,
+): number {
+  return discounts.reduce((sum, discount) => {
+    const value = discountValue(discount, base, flatShare)
+
+    switch (discount.allocation ?? 'proportional') {
+      case 'equal':
+        return sum + (listed > 0 ? value / listed : 0)
+      case 'payer':
+        return sum + (participantId === payerId ? value : 0)
+      default:
+        return sum + value * ratio
+    }
+  }, 0)
 }
 
 /** A fee once its own promos are off it. */
@@ -252,6 +307,17 @@ export function calculateBill(bill: Bill): BillResult {
     }
   }
 
+  /*
+   * The promos may together have come to more than the food, in which case
+   * `discounted` is the capped figure. Scaling every share by the same factor
+   * keeps them adding up to it, whatever mix of strategies produced them.
+   */
+  const uncapped = discounts.reduce(
+    (sum, discount) => sum + discountValue(discount, food, covered),
+    0,
+  )
+  const capScale = uncapped > 0 ? discounted / uncapped : 0
+
   const exact = participants.map((participant) => {
     const personFood = foodFor(participant.id, items)
     // No food means no basis for a proportional share, so it stays at nothing.
@@ -261,13 +327,23 @@ export function calculateBill(bill: Bill): BillResult {
         sum + (fee.split === 'even' ? amount / listed : amount * ratio),
       0,
     )
+    const discountShare =
+      discountFor(
+        participant.id,
+        discounts,
+        food,
+        covered,
+        ratio,
+        listed,
+        payerId,
+      ) * capScale
 
     return {
       participantId: participant.id,
       food: personFood,
       fees: feeShare,
-      discount: discounted * ratio,
-      exactTotal: personFood + feeShare - discounted * ratio,
+      discount: discountShare,
+      exactTotal: personFood + feeShare - discountShare,
     }
   })
 

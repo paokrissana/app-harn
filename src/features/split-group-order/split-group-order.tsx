@@ -7,8 +7,10 @@ import {
   calculateBill,
   sharedPlates,
   type BillResult,
+  type DiscountAllocation,
   type SharedPlate,
 } from '@/shared/lib/bill'
+import type { TranslationKey } from '@/i18n/translations'
 import { formatBaht } from '@/shared/lib/money'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
@@ -41,6 +43,15 @@ import {
   toggleSharer,
   withoutPerson,
 } from './order-form'
+
+/** The allocation choices, in the order they appear under a discount. */
+const ALLOCATIONS: DiscountAllocation[] = ['proportional', 'equal', 'payer']
+
+const ALLOCATION_LABEL: Record<DiscountAllocation, TranslationKey> = {
+  proportional: 'goAllocProportional',
+  equal: 'goAllocEqual',
+  payer: 'goAllocPayer',
+}
 
 function MoneyInput({ className, ...props }: ComponentProps<typeof Input>) {
   return (
@@ -104,6 +115,7 @@ function PromoRow({
   error,
   onRemove,
   removeLabel,
+  children,
 }: {
   kind: ValueKind
   kindLabel: string
@@ -112,6 +124,8 @@ function PromoRow({
   error?: string
   onRemove: () => void
   removeLabel: string
+  /** An extra control under the row — the discount allocation picker. */
+  children?: ReactNode
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -143,6 +157,36 @@ function PromoRow({
         >
           <Trash2Icon />
         </Button>
+      </div>
+      <FieldError message={error} />
+      {children}
+    </div>
+  )
+}
+
+/** One fee off the receipt: a label and a baht box. */
+function FeeRow({
+  id,
+  label,
+  invalid,
+  error,
+  inputProps,
+}: {
+  id: string
+  label: string
+  invalid: boolean
+  error?: string
+  inputProps: ComponentProps<'input'>
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <Label htmlFor={id} className="flex-1">
+          {label}
+        </Label>
+        <div className="w-28 shrink-0">
+          <MoneyInput id={id} aria-invalid={invalid} {...inputProps} />
+        </div>
       </div>
       <FieldError message={error} />
     </div>
@@ -457,19 +501,37 @@ export function SplitGroupOrder() {
 
         {/* Delivery, its own promos, and the food discounts */}
         <Section title={t('goFees')}>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="deliveryFee" className="flex-1">
-              {t('goDeliveryFee')}
-            </Label>
-            <div className="w-28 shrink-0">
-              <MoneyInput
-                id="deliveryFee"
-                aria-invalid={!!errors.deliveryFee}
-                {...register('deliveryFee')}
-              />
-            </div>
-          </div>
-          <FieldError message={errors.deliveryFee?.message} />
+          <FeeRow
+            id="deliveryFee"
+            label={t('goDeliveryFee')}
+            invalid={!!errors.deliveryFee}
+            error={errors.deliveryFee?.message}
+            inputProps={register('deliveryFee')}
+          />
+          <FeeRow
+            id="serviceFee"
+            label={t('goServiceFee')}
+            invalid={!!errors.serviceFee}
+            error={errors.serviceFee?.message}
+            inputProps={register('serviceFee')}
+          />
+          <FeeRow
+            id="smallOrderFee"
+            label={t('goSmallOrderFee')}
+            invalid={!!errors.smallOrderFee}
+            error={errors.smallOrderFee?.message}
+            inputProps={register('smallOrderFee')}
+          />
+          <FeeRow
+            id="tip"
+            label={t('goTip')}
+            invalid={!!errors.tip}
+            error={errors.tip?.message}
+            inputProps={register('tip')}
+          />
+          <p className="text-muted-foreground text-xs">
+            {t('goOptionalFeesHelp')}
+          </p>
 
           <div className="flex flex-col gap-2">
             <Label>{t('goDeliveryPromo')}</Label>
@@ -524,7 +586,40 @@ export function SplitGroupOrder() {
                 error={errors.discounts?.[index]?.value?.message}
                 onRemove={() => discounts.remove(index)}
                 removeLabel={t('goRemovePromo')}
-              />
+              >
+                {/*
+                  Who a promo belongs to is a fact about the promo, not the
+                  order, so it sits on the promo rather than in a global setting.
+                */}
+                <div
+                  role="group"
+                  aria-label={`${t('goDiscounts')} ${index + 1}: ${t('goDiscountAllocation')}`}
+                  className="flex flex-wrap gap-1"
+                >
+                  {ALLOCATIONS.map((allocation) => (
+                    <button
+                      key={allocation}
+                      type="button"
+                      aria-pressed={
+                        (watchedDiscounts[index]?.allocation ??
+                          'proportional') === allocation
+                      }
+                      onClick={() =>
+                        setValue(`discounts.${index}.allocation`, allocation)
+                      }
+                      className={cn(
+                        'focus-visible:ring-ring/50 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-[3px]',
+                        (watchedDiscounts[index]?.allocation ??
+                          'proportional') === allocation
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input text-muted-foreground hover:bg-accent',
+                      )}
+                    >
+                      {t(ALLOCATION_LABEL[allocation])}
+                    </button>
+                  ))}
+                </div>
+              </PromoRow>
             ))}
             <FieldError
               message={
@@ -594,7 +689,7 @@ export function SplitGroupOrder() {
                   <p className="text-muted-foreground text-xs tabular-nums">
                     {t('goRowFood')} {formatBaht(share.food, false)}
                     {' · '}
-                    {t('goRowDelivery')} {formatBaht(share.fees, false)}
+                    {t('goRowFees')} {formatBaht(share.fees, false)}
                     {share.discount > 0 && (
                       <>
                         {' · '}

@@ -61,7 +61,7 @@ async function addDiscount(
   await user.click(screen.getByRole('button', { name: /add discount/i }))
   if (kind === 'amount') {
     const group = screen.getByRole('group', {
-      name: new RegExp(`^Discounts ${index}:`),
+      name: new RegExp(`^Discounts ${index}: Promo`),
     })
     await user.click(within(group).getByRole('button', { name: 'Baht' }))
   }
@@ -197,12 +197,106 @@ describe('Split Group Order', () => {
     await addDiscount(user, 2, 'amount', '30')
     await user.click(screen.getByRole('button', { name: /^calculate$/i }))
 
-    // Bianca: 180 of food, 15 of delivery, 30 off
+    // Bianca: 180 of food, 15 of fees (delivery only here), 30 off
     const bianca = (await owed().findByText(/^Bianca$/)).closest('li')!
     expect(bianca).toHaveTextContent('food 180.00')
-    expect(bianca).toHaveTextContent('delivery 15.00')
+    expect(bianca).toHaveTextContent('fees 15.00')
     expect(bianca).toHaveTextContent('discount −30.00')
     expect(bianca).toHaveTextContent('165.00 THB')
+  })
+
+  it('charges the three optional fees the way each one is meant to split', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await nameThem(user, ['Alex', 'Bianca'])
+    await addItem(user, 'Alex', 1, 'Rice', '300')
+    await addItem(user, 'Bianca', 2, 'Soup', '100')
+    await user.type(screen.getByLabelText(/delivery fee/i), '0')
+
+    // Service follows what each ordered; the small-order fee and tip are even.
+    await user.clear(screen.getByLabelText(/service fee/i))
+    await user.type(screen.getByLabelText(/service fee/i), '40')
+    await user.clear(screen.getByLabelText(/small order fee/i))
+    await user.type(screen.getByLabelText(/small order fee/i), '20')
+    await user.clear(screen.getByLabelText(/tip for the rider/i))
+    await user.type(screen.getByLabelText(/tip for the rider/i), '30')
+
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText(/order total: 490\.00 THB/i),
+    ).toBeInTheDocument()
+    // Alex 300 + 30 service + 10 + 15; Bianca 100 + 10 service + 10 + 15.
+    expect(owed().getByText('135.00 THB')).toBeInTheDocument()
+  })
+
+  it('keeps a discount off everyone equally when told to', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await nameThem(user, ['Alex', 'Bianca'])
+    await addItem(user, 'Alex', 1, 'Rice', '300')
+    await addItem(user, 'Bianca', 2, 'Soup', '100')
+    await user.type(screen.getByLabelText(/delivery fee/i), '0')
+    await addDiscount(user, 1, 'amount', '80')
+
+    const group = screen.getByRole('group', { name: /^Discounts 1: Who gets/ })
+    await user.click(within(group).getByRole('button', { name: /split evenly/i }))
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    // 40 off each rather than 60/20 by order size.
+    const bianca = (await owed().findByText(/^Bianca$/)).closest('li')!
+    expect(bianca).toHaveTextContent('discount −40.00')
+    expect(bianca).toHaveTextContent('60.00 THB')
+  })
+
+  it('lets the payer keep a discount that is theirs alone', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await nameThem(user, ['Alex', 'Bianca'])
+    await addItem(user, 'Alex', 1, 'Rice', '300')
+    await addItem(user, 'Bianca', 2, 'Soup', '100')
+    await user.type(screen.getByLabelText(/delivery fee/i), '0')
+    await addDiscount(user, 1, 'amount', '80')
+
+    const group = screen.getByRole('group', { name: /^Discounts 1: Who gets/ })
+    await user.click(within(group).getByRole('button', { name: /mine only/i }))
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    // Bianca's soup is untouched; Alex absorbs the whole voucher.
+    const bianca = (await owed().findByText(/^Bianca$/)).closest('li')!
+    expect(bianca).toHaveTextContent('100.00 THB')
+    expect(bianca).not.toHaveTextContent('discount')
+  })
+
+  it('spreads a discount by order size unless told otherwise', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await nameThem(user, ['Alex', 'Bianca'])
+    await addItem(user, 'Alex', 1, 'Rice', '300')
+    await addItem(user, 'Bianca', 2, 'Soup', '100')
+    await user.type(screen.getByLabelText(/delivery fee/i), '0')
+    await addDiscount(user, 1, 'amount', '80')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    const bianca = (await owed().findByText(/^Bianca$/)).closest('li')!
+    expect(bianca).toHaveTextContent('discount −20.00')
+  })
+
+  it('refuses a percentage promo over 100', async () => {
+    const user = userEvent.setup()
+    renderOrder()
+
+    await enterTheRealOrder(user)
+    await addDiscount(user, 1, 'percent', '150')
+    await user.click(screen.getByRole('button', { name: /^calculate$/i }))
+
+    expect(
+      await screen.findByText(/a percentage cannot be over 100/i),
+    ).toBeInTheDocument()
   })
 
   it('spells out who owes what for each shared plate', async () => {

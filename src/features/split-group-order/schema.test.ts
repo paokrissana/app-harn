@@ -57,6 +57,9 @@ const form: GroupOrderFormInput = {
     },
   ],
   deliveryFee: '45',
+  serviceFee: '0',
+  smallOrderFee: '0',
+  tip: '0',
   deliveryPromos: [],
   discounts: [
     { id: 'd1', kind: 'percent', value: '10' },

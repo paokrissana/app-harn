@@ -4,13 +4,15 @@ Calculators for splitting expenses. Frontend only — everything runs locally in
 the browser, no login, no backend. See [CLAUDE.md](CLAUDE.md) for the vision,
 architecture and roadmap.
 
-Three tools so far:
+Four tools so far:
 
 - **Split Meal** — what you owe when somebody else paid the whole bill.
 - **Split Group Order** — what everyone owes you when you ordered delivery for
   the group.
 - **Split Group Meal** — the dine-in case: one restaurant bill, dishes going
   round the table.
+- **Percentage Calculator** — a percentage, a discount, a price rise, or one
+  amount as a percentage of another.
 
 The first two are deliberately one-sided in opposite directions — money out
 versus money back. See [CLAUDE.md](CLAUDE.md) for what is still to come.
@@ -128,6 +130,40 @@ alone. Get that backwards and a table of eight costs eight taps per dish.
 is the same `src/shared/lib/bill.ts` as Split Group Order — the charges are just
 `Fee` entries with `split: 'proportional'`.
 
+## Percentage Calculator
+
+Four everyday questions, one page:
+
+```
+% of        What is 80% of 1,500?          -> 1,200
+Discount    Take 60% off 5,000             -> you save 3,000, you pay 2,000
+Increase    Add 10% to 1,000               -> adds 100, new amount 1,100
+%           800 out of 1,000               -> 80%
+```
+
+**No Calculate button.** Two boxes and arithmetic that costs nothing, so the
+answer appears as you type. The split tools keep their button because they have
+a form's worth of input; this one would only be interrupted by it.
+
+The bounds differ per mode rather than globally, because the question changes
+what is sensible. A discount is capped at **100%** — you cannot pay less than
+nothing — while `300% of 50` is an ordinary question and is allowed. A whole of
+zero is refused outright, since every number is an infinite percentage of
+nothing.
+
+An empty box means "not filled in yet", never zero: nothing is answered until
+both hold a number, rather than replying to a question nobody finished asking.
+
+Results drop trailing zeros — `1,200` rather than `1,200.00`, but `1,200.50`
+when the decimals matter (`formatAmount` in `src/shared/lib/money.ts`). That
+rounding to two decimals is also where binary-float noise disappears: 70% of
+8.1 is not exactly 5.67 in IEEE 754, and the tests pin the displayed answer
+rather than the internal one.
+
+`src/features/percentage-calculator/percentage.ts` holds the four pure
+functions. No participants, no fees, no `Bill` — this one shares nothing with
+the split engine but the formatting.
+
 ## Saved bills
 
 Every calculation is kept in `localStorage` under `bill-history` — there is no
@@ -163,6 +199,7 @@ backend, so history lives on the one device and never leaves it.
 | `/split-meal` | Split Meal calculator                   |
 | `/split-group-order` | Split Group Order                |
 | `/split-group-meal` | Split Group Meal                  |
+| `/percentage` | Percentage Calculator                  |
 | anything else | redirects home                          |
 
 Tools that are not built yet appear on the home page dimmed, badged `Soon`, and
@@ -197,6 +234,7 @@ npm run lint       # oxlint
 - `src/shared/lib/bill.ts` — the shared calculation engine (unit tested)
 - `src/features/split-group-order/` — its form, schema and mapping to a `Bill`
 - `src/features/split-group-meal/` — the same, for one restaurant bill
+- `src/features/percentage-calculator/` — four modes, pure maths, no `Bill`
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema

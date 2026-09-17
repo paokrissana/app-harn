@@ -5,6 +5,13 @@ import { beforeEach, vi } from 'vitest'
 // with an empty one so nothing leaks between them.
 beforeEach(() => {
   localStorage.clear()
+  /*
+   * The app defaults to Thai, for the reason in i18n/context.tsx. Tests assert
+   * against English wording because that is what they were written in and it
+   * keeps them readable to anyone. Pinning it here is a test convenience, not
+   * a claim about the default — that is covered in i18n/context.test.tsx.
+   */
+  localStorage.setItem('lang', 'en')
 })
 
 // jsdom has no layout, so scrolling back to the form is a no-op here.

@@ -29,7 +29,16 @@ const I18nContext = createContext<I18nValue | null>(null)
 
 function getInitialLang(): Lang {
   const stored = localStorage.getItem('lang')
-  return stored === 'en' || stored === 'th' ? stored : 'en'
+  if (stored === 'en' || stored === 'th') return stored
+
+  /*
+   * Thai by default. Not a guess at the visitor — a search engine never taps
+   * the toggle, so whatever this returns is the only language that ends up in
+   * the indexed page. The searches AppHarn is for are Thai ones
+   * ("หารค่าอาหาร", "80% ของ 1500"), and English-by-default put none of those
+   * words on any page. Everyone gets the toggle; crawlers get Thai.
+   */
+  return 'th'
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

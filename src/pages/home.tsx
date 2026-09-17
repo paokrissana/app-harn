@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ChevronRightIcon } from 'lucide-react'
 
 import { TOOLS, type Tool } from '@/lib/tools'
+import { resolveDevMode } from '@/lib/dev-mode'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
 
@@ -83,6 +84,15 @@ function ToolCard({ tool }: { tool: Tool }) {
 
 export function HomePage() {
   const { t } = useI18n()
+  const { search } = useLocation()
+  const isDevMode = resolveDevMode(search)
+
+  /*
+   * Tools without a page are roadmap, not product. They are worth seeing while
+   * building and are clutter to everyone else, so they only appear in dev mode.
+   * Beta tools stay: they work, and the badge already says to check the numbers.
+   */
+  const visible = isDevMode ? TOOLS : TOOLS.filter((tool) => tool.path !== null)
 
   return (
     <div className="flex flex-col gap-5">
@@ -93,7 +103,7 @@ export function HomePage() {
       {/* One column at every width: the shell is a narrow phone-shaped
           column, and two columns inside it wrap the descriptions to bits. */}
       <ul className="flex flex-col gap-3">
-        {TOOLS.map((tool) => (
+        {visible.map((tool) => (
           <li key={tool.id} className="flex">
             <ToolCard tool={tool} />
           </li>

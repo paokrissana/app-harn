@@ -18,13 +18,41 @@ function renderAt(path: string) {
 }
 
 describe('home page', () => {
-  it('lists every tool from the vision', () => {
+  it('lists the tools that exist, and no roadmap', () => {
     renderAt('/')
 
-    const cards = screen.getAllByRole('listitem')
-    expect(cards).toHaveLength(TOOLS.length)
+    const built = TOOLS.filter((tool) => tool.path !== null)
+    expect(screen.getAllByRole('listitem')).toHaveLength(built.length)
     expect(screen.getByText('Split Meal')).toBeInTheDocument()
+    // Split Utilities has no page, so it is roadmap rather than product.
+    expect(screen.queryByText('Split Utilities')).not.toBeInTheDocument()
+  })
+
+  it('brings the unbuilt tools back in dev mode', () => {
+    renderAt('/?devMode=on')
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(TOOLS.length)
     expect(screen.getByText('Split Utilities')).toBeInTheDocument()
+  })
+
+  it('says why there is extra on screen, and offers the way out', async () => {
+    const user = userEvent.setup()
+    renderAt('/?devMode=on')
+
+    expect(screen.getByText(/dev mode/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /turn off/i }))
+
+    expect(screen.queryByText('Split Utilities')).not.toBeInTheDocument()
+    expect(screen.queryByText(/dev mode/i)).not.toBeInTheDocument()
+  })
+
+  it('remembers dev mode without the parameter, until turned off', () => {
+    renderAt('/?devMode=on')
+    expect(screen.getByText('Split Utilities')).toBeInTheDocument()
+
+    // A fresh visit with no parameter at all.
+    renderAt('/')
+    expect(screen.getAllByText('Split Utilities').length).toBeGreaterThan(0)
   })
 
   it('leads with the mission', () => {
@@ -72,7 +100,7 @@ describe('home page', () => {
   })
 
   it('marks the unbuilt tools as coming soon', () => {
-    renderAt('/')
+    renderAt('/?devMode=on')
 
     const soon = screen.getAllByText(/^coming soon$/i)
     expect(soon).toHaveLength(TOOLS.filter((tool) => !tool.path).length)
@@ -103,7 +131,7 @@ describe('routing', () => {
 
     await user.click(screen.getByRole('link', { name: /all tools/i }))
 
-    expect(screen.getByText('Split Utilities')).toBeInTheDocument()
+    expect(screen.getByText('Split Meal')).toBeInTheDocument()
     expect(screen.queryByLabelText(/total bill/i)).not.toBeInTheDocument()
   })
 

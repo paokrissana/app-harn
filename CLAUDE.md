@@ -42,8 +42,8 @@ the two still in beta.
 | Split Group Order *(beta)* | `/split-group-order` | What everyone owes *me* after I ordered delivery |
 | Split Group Meal *(beta)* | `/split-group-meal` | Everyone's share of one restaurant bill |
 
-Five more appear on the home page as dimmed "coming soon" cards: Split Taxi,
-Split Trip, Split Rent, Split Shopping, Split Utilities.
+Five more exist only as roadmap — Split Taxi, Split Trip, Split Rent, Split
+Shopping, Split Utilities. They are **hidden** unless dev mode is on (§4).
 
 Three of them split a bill between people; the Percentage Calculator is the
 first of the standalone calculators. Once there are two or three of those, the
@@ -125,6 +125,18 @@ never taps the toggle, so the default decides the only language that reaches an
 indexed page — and every search AppHarn is meant to be found by is Thai. One URL
 can carry one language, and this is the one that matters. Separate `/th/` URLs
 with `hreflang` are the eventual refinement, not a prerequisite.
+
+**Roadmap is hidden; beta is not.** A tool with no page is clutter to everyone
+but the person building it, so the unbuilt cards only appear in dev mode —
+`?devMode=on`, remembered in `localStorage`, `?devMode=off` to leave. A URL
+parameter rather than a console command or a build flag: a console command
+cannot be run on the phone you would demo on, and a build flag could never be
+turned on by somebody you sent a link to.
+
+Tools merely in **beta** stay visible. They work, their numbers reconcile, the
+badge already says to check them — and `/split-group-order` is the page carrying
+the GrabFood search, so hiding it would throw away the best SEO term the site
+has. Hiding a working tool costs more than a badge does.
 
 **A calculator with two boxes has no Calculate button.** The Percentage
 Calculator answers live as you type; the split tools keep their button because

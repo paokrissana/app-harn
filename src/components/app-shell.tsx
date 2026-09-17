@@ -1,9 +1,11 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 
 import { useI18n } from '@/i18n/context'
+import { resolveDevMode } from '@/lib/dev-mode'
 import { AccentSwitcher } from '@/components/accent-switcher'
 import { LanguageToggle } from '@/components/language-toggle'
 import { Logo } from '@/components/logo'
+import { DevModeBanner } from '@/components/dev-mode-banner'
 import { PageMeta } from '@/components/page-meta'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -14,6 +16,8 @@ import { ThemeToggle } from '@/components/theme-toggle'
  */
 export function AppShell() {
   const { t } = useI18n()
+  const { search } = useLocation()
+  const isDevMode = resolveDevMode(search)
 
   return (
     <div className="relative min-h-svh w-full overflow-hidden">
@@ -44,6 +48,8 @@ export function AppShell() {
             <AccentSwitcher />
           </div>
         </header>
+
+        {isDevMode && <DevModeBanner />}
 
         <main>
           <Outlet />

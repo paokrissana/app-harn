@@ -1,7 +1,7 @@
 # AppHarn
 
 Calculators for splitting expenses. Frontend only — everything runs locally in
-the browser, no login, no backend. See [PROJECT.md](PROJECT.md) for the vision,
+the browser, no login, no backend. See [CLAUDE.md](CLAUDE.md) for the vision,
 architecture and roadmap.
 
 Three tools so far:
@@ -13,7 +13,7 @@ Three tools so far:
   round the table.
 
 The first two are deliberately one-sided in opposite directions — money out
-versus money back. See [PROJECT.md](PROJECT.md) for what is still to come.
+versus money back. See [CLAUDE.md](CLAUDE.md) for what is still to come.
 
 ## Split Meal
 
@@ -159,7 +159,7 @@ backend, so history lives on the one device and never leaves it.
 
 | Path          | Page                                    |
 | ------------- | --------------------------------------- |
-| `/`           | Home — the tool list from `PROJECT.md`  |
+| `/`           | Home — the tool list from `tools.ts`     |
 | `/split-meal` | Split Meal calculator                   |
 | `/split-group-order` | Split Group Order                |
 | `/split-group-meal` | Split Group Meal                  |

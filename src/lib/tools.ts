@@ -23,7 +23,7 @@ export interface Tool {
   beta?: boolean
 }
 
-/** Every tool from PROJECT.md, built or not, in the order the home page lists them. */
+/** Every tool from CLAUDE.md, built or not, in the order the home page lists them. */
 export const TOOLS: Tool[] = [
   {
     id: 'split-meal',

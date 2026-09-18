@@ -30,22 +30,23 @@ actually work. There is no third document.
 
 ## 2. Current state
 
-Three tools are built and live:
+Five tools are built and live.
 
-Listed in the order the home page shows them — the finished tools first, then
-the two still in beta.
+Listed in the order the home page shows them — the settled tools first, then
+the three still in beta.
 
 | Tool | Route | What it answers |
 | --- | --- | --- |
 | Split Meal | `/split-meal` | What *I* owe when somebody else paid the whole bill |
 | Percentage Calculator | `/percentage` | A percentage, a discount, a rise, or one amount as a percentage of another |
+| Split Taxi *(beta)* | `/split-taxi` | Who owes what on a shared ride when people get out at different points |
 | Split Group Order *(beta)* | `/split-group-order` | What everyone owes *me* after I ordered delivery |
 | Split Group Meal *(beta)* | `/split-group-meal` | Everyone's share of one restaurant bill |
 
-Five more exist only as roadmap — Split Taxi, Split Trip, Split Rent, Split
+Four more exist only as roadmap — Split Trip, Split Rent, Split
 Shopping, Split Utilities. They are **hidden** unless dev mode is on (§4).
 
-Three of them split a bill between people; the Percentage Calculator is the
+Four of them split a cost between people; the Percentage Calculator is the
 first of the standalone calculators. Once there are two or three of those, the
 home page will want grouping — one flat list stops reading well when the cards
 answer different kinds of question.
@@ -66,10 +67,11 @@ for.
 
 ### Next
 
-1. **Journey Split** — segment-based fare splitting (see below).
-2. **The standalone calculators** — Discount, VAT, Service Charge, Tip. Each is
+1. **The standalone calculators** — Discount, VAT, Service Charge, Tip. Each is
    roughly an hour on top of the percentage engine, and each is its own landing
    page for a search like `คิด VAT 7%`.
+2. **A home page that groups its cards.** Five tools of two different kinds now
+   sit in one flat list.
 
 ### Later
 
@@ -80,16 +82,26 @@ Split Trip, Split Hotel, Split Rent, Split Utilities, Split Shopping.
 Share links, history beyond Split Meal, receipt OCR, PromptPay QR, PWA, trip
 mode, favourite groups.
 
-### Journey Split needs its own engine
+### Why Split Taxi has its own engine
 
-Journey Split divides a taxi fare by **meter segments**, not equally: three
-passengers from ฿35 to ฿145, two from ฿145 to ฿245, one to the end. Each person
-pays for the stretch they were aboard.
+Split Taxi divides a fare by **meter segments**, not equally: three passengers
+from ฿35 to ฿145, two from ฿145 to ฿245, one to the end. Each person pays for
+the stretch they were aboard.
 
-`src/shared/lib/bill.ts` has no notion of sequence or of a participant being
-present for only part of a bill — every item is shared by a fixed set of people.
-So this is a genuinely different shape and needs a design before any code.
-Reusing `Bill` here would be forcing it.
+`bill.ts` splits items between a fixed set of people — an item is shared by
+whoever is named on it, and nothing about the model changes over the course of
+the bill. A journey is the opposite: the same fare is shared by three people at
+the start and one at the end, and the only way to know who owes what is to walk
+the meter in order. **Sequence is the whole model**, and `Bill` has no notion of
+it. Forcing one into the other would have meant a synthetic item per segment and
+losing the segment breakdown, which is the part that makes the answer checkable.
+
+So `src/features/journey-split/journey.ts` is a second engine, deliberately. It
+is the only one, and the bar for a third is the same: a shape `Bill` genuinely
+cannot express, not merely a feature that is awkward to map.
+
+Nothing in it is taxi-specific — a meter reading is just a running total — so a
+van, a ride-hailing fare or a carpool would reuse it as-is.
 
 ---
 
@@ -176,9 +188,10 @@ src/
     split-group-order/     form, schema, mapping to Bill
     split-group-meal/      the same, for one restaurant bill
     percentage-calculator/ four modes, pure maths, no Bill model
+    journey-split/         a second engine — a fare split by meter segments
   shared/
     components/            reused across features
-    lib/                   bill.ts (the engine), money.ts, id.ts
+    lib/                   bill.ts (the main engine), money.ts, id.ts
   pages/                   one file per route
   components/              app shell, Split Meal, ui/ primitives
   lib/                     Split Meal logic, tool registry

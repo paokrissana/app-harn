@@ -225,6 +225,31 @@ and an aliased import would drag the app's path mapping into the build config's
 resolution. It declares its own language union, and `seo.test.ts` fails to
 compile if that ever drifts from the app's `Lang`.
 
+## Dev mode
+
+The home page lists only tools that exist. The ones still on the roadmap are
+hidden, since a card nobody can tap is clutter to everyone but the person
+building it.
+
+To see them:
+
+```
+https://paokrissana.github.io/app-harn/?devMode=on     show everything
+https://paokrissana.github.io/app-harn/?devMode=off    back to normal
+```
+
+The choice sticks in `localStorage` (`dev-mode`), so the parameter is only
+needed once, and a banner appears while it is on — with a button to leave, so it
+is never a state you can enter and not name. Any value other than `on` fails
+closed.
+
+A URL parameter rather than a console command or a build flag: a console command
+cannot be run on the phone you would actually demo on, and a build flag could
+never be turned on by somebody you sent a link to. This one is shareable.
+
+Tools in **beta** are not hidden. They work, and the badge already says to check
+the numbers.
+
 ## Stack
 
 - React 19 + TypeScript + Vite

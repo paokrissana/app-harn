@@ -3,6 +3,7 @@ import {
   CarTaxiFrontIcon,
   HandPlatterIcon,
   HouseIcon,
+  PercentIcon,
   LuggageIcon,
   ShoppingBagIcon,
   UtensilsCrossedIcon,
@@ -75,6 +76,13 @@ export const TOOLS: Tool[] = [
     icon: ShoppingBagIcon,
     nameKey: 'toolShoppingName',
     descKey: 'toolShoppingDesc',
+  },
+  {
+    id: 'percentage',
+    path: '/percentage',
+    icon: PercentIcon,
+    nameKey: 'toolPercentageName',
+    descKey: 'toolPercentageDesc',
   },
   {
     id: 'split-utilities',

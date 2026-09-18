@@ -37,9 +37,15 @@ Three tools are built and live:
 | Split Meal | `/split-meal` | What *I* owe when somebody else paid the whole bill |
 | Split Group Order | `/split-group-order` | What everyone owes *me* after I ordered delivery |
 | Split Group Meal | `/split-group-meal` | Everyone's share of one restaurant bill |
+| Percentage Calculator | `/percentage` | A percentage, a discount, a rise, or one amount as a percentage of another |
 
 Five more appear on the home page as dimmed "coming soon" cards: Split Taxi,
 Split Trip, Split Rent, Split Shopping, Split Utilities.
+
+The first three split a bill between people; the Percentage Calculator is the
+first of the standalone calculators. Once there are two or three of those, the
+home page will want grouping — one flat list stops reading well when the cards
+answer different kinds of question.
 
 Split Meal and Split Group Order point in **opposite directions** — money out
 versus money back. That is deliberate and is what distinguishes them.
@@ -53,14 +59,12 @@ fees than the spec calls for.
 
 ### Next
 
-1. **Percentage Calculator** — `% of`, discount, increase, relation. Four pure
-   functions, no participants, no Bill model. Also the first tool that serves
-   the search terms in §9.
-2. **SEO pass** — per-route titles and descriptions, once two calculators exist.
-3. **Finish Split Group Order** — service fee, small-order fee, tip, and the
+1. **SEO pass** — per-route titles and descriptions. The Percentage Calculator
+   is live now, so the terms in §9 finally have pages to land on.
+2. **Finish Split Group Order** — service fee, small-order fee, tip, and the
    Equal and Payer-Only discount strategies. The engine already splits a fee
    evenly or proportionally, so these are rows in a form, not new maths.
-4. **Journey Split** — segment-based fare splitting (see below).
+3. **Journey Split** — segment-based fare splitting (see below).
 
 ### Later
 
@@ -112,6 +116,11 @@ figures will disagree once informal sharing is applied — it splits delivery
 gross and cannot know who shared what. Matching Grab would mean collecting more
 than the bill. The order total is the only figure that must agree.
 
+**A calculator with two boxes has no Calculate button.** The Percentage
+Calculator answers live as you type; the split tools keep their button because
+they have a form's worth of input and a result worth pausing on. Follow the
+input size, not a house style.
+
 **Split Meal keeps its own logic.** It predates the shared engine, is
 single-sided, and barely touches the Bill model. `src/lib/calculator.ts` stays
 until there is a reason to migrate it. Two locations, knowingly.
@@ -144,6 +153,7 @@ src/
   features/
     split-group-order/     form, schema, mapping to Bill
     split-group-meal/      the same, for one restaurant bill
+    percentage-calculator/ four modes, pure maths, no Bill model
   shared/
     components/            reused across features
     lib/                   bill.ts (the engine), money.ts, id.ts

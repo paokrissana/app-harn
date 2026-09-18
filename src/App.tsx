@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from '@/components/app-shell'
 import { HomePage } from '@/pages/home'
+import { PercentagePage } from '@/pages/percentage'
 import { SplitGroupMealPage } from '@/pages/split-group-meal'
 import { SplitGroupOrderPage } from '@/pages/split-group-order'
 import { SplitMealPage } from '@/pages/split-meal'
@@ -15,6 +16,7 @@ export function AppRoutes() {
         <Route path="split-meal" element={<SplitMealPage />} />
         <Route path="split-group-order" element={<SplitGroupOrderPage />} />
         <Route path="split-group-meal" element={<SplitGroupMealPage />} />
+        <Route path="percentage" element={<PercentagePage />} />
         {/* Anything else — an old link, a typo — lands on the tool list. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

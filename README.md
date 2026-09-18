@@ -4,7 +4,7 @@ Calculators for splitting expenses. Frontend only — everything runs locally in
 the browser, no login, no backend. See [CLAUDE.md](CLAUDE.md) for the vision,
 architecture and roadmap.
 
-Four tools so far:
+Five tools so far:
 
 - **Split Meal** — what you owe when somebody else paid the whole bill.
 - **Split Group Order** — what everyone owes you when you ordered delivery for
@@ -13,6 +13,7 @@ Four tools so far:
   round the table.
 - **Percentage Calculator** — a percentage, a discount, a price rise, or one
   amount as a percentage of another.
+- **Split Taxi** — a shared ride where people get out at different points.
 
 The first two are deliberately one-sided in opposite directions — money out
 versus money back. See [CLAUDE.md](CLAUDE.md) for what is still to come.
@@ -172,6 +173,48 @@ rather than the internal one.
 functions. No participants, no fees, no `Bill` — this one shares nothing with
 the split engine but the formatting.
 
+## Split Taxi
+
+Three of you share a taxi. One gets out halfway, another later, the last rides
+to the end. **Nobody divides the final fare** — each stretch of the meter is
+shared by whoever was in the car for it.
+
+```
+฿35 → ฿145    A · B · C     ฿110 ÷ 3
+฿145 → ฿245   A · C         ฿100 ÷ 2
+฿245 → ฿335   C             ฿90  ÷ 1
+```
+
+So B pays ฿36.67, A ฿86.67, C ฿176.67 — and the result shows that table, because
+one number per person is not checkable but "฿110 ÷ 3, and you were in for it" is.
+
+Somebody getting out at ฿145 pays for the stretch *ending* at 145 and nothing
+after it. A stretch where the meter did not move is kept rather than dropped:
+two people getting out at the same place is ordinary, and a zero-fare row says
+so honestly instead of hiding a step of the journey.
+
+**Tolls and extras** divide either among everyone who rode, or among whoever was
+still in the car — parking at the destination is not owed by the person who left
+two miles back.
+
+Most of the validation is about **order**, because a meter only ever goes up: a
+reading that goes backwards means a number was typed wrong, and every share
+downstream would be quietly wrong with it. Each drop-off is checked against the
+one before it, so the message points at the reading that actually broke the
+sequence.
+
+### A second engine, deliberately
+
+`src/features/journey-split/journey.ts` does not use `bill.ts`, and that is the
+point. `Bill` splits items between a fixed set of people — an item is shared by
+whoever is named on it, and nothing changes over the course of the bill. A
+journey is the opposite: the same fare is shared by three people at the start and
+one at the end, and the only way to know who owes what is to walk the meter in
+order. Sequence is the whole model, and `Bill` has no notion of it.
+
+Nothing in it is taxi-specific. A meter reading is just a running total, so a
+van, a ride-hailing fare or a carpool would reuse it unchanged.
+
 ## Saved bills
 
 Every calculation is kept in `localStorage` under `bill-history` — there is no
@@ -267,6 +310,7 @@ the numbers.
 | `/split-group-order` | Split Group Order                |
 | `/split-group-meal` | Split Group Meal                  |
 | `/percentage` | Percentage Calculator                  |
+| `/split-taxi` | Split Taxi                            |
 | anything else | redirects home                          |
 
 Tools that are not built yet appear on the home page dimmed, badged `Soon`, and
@@ -302,6 +346,7 @@ npm run lint       # oxlint
 - `src/features/split-group-order/` — its form, schema and mapping to a `Bill`
 - `src/features/split-group-meal/` — the same, for one restaurant bill
 - `src/features/percentage-calculator/` — four modes, pure maths, no `Bill`
+- `src/features/journey-split/` — the fare engine, its schema and form
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema

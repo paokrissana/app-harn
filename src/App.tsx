@@ -4,6 +4,7 @@ import { AppShell } from '@/components/app-shell'
 import { HomePage } from '@/pages/home'
 import { PercentagePage } from '@/pages/percentage'
 import { SplitGroupMealPage } from '@/pages/split-group-meal'
+import { SplitTaxiPage } from '@/pages/split-taxi'
 import { SplitGroupOrderPage } from '@/pages/split-group-order'
 import { SplitMealPage } from '@/pages/split-meal'
 
@@ -17,6 +18,7 @@ export function AppRoutes() {
         <Route path="split-group-order" element={<SplitGroupOrderPage />} />
         <Route path="split-group-meal" element={<SplitGroupMealPage />} />
         <Route path="percentage" element={<PercentagePage />} />
+        <Route path="split-taxi" element={<SplitTaxiPage />} />
         {/* Anything else — an old link, a typo — lands on the tool list. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

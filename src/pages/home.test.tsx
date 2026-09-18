@@ -62,15 +62,17 @@ describe('home page', () => {
     ).toBeInTheDocument()
   })
 
-  it('only makes the built tool tappable', () => {
-    renderAt('/')
+  it('only makes a built tool tappable', () => {
+    renderAt('/?devMode=on')
 
     expect(screen.getByRole('link', { name: /split meal/i })).toHaveAttribute(
       'href',
       '/split-meal',
     )
+    // Split Trip has no page, so its card is shown but never a link.
+    expect(screen.getByText('Split Trip')).toBeInTheDocument()
     expect(
-      screen.queryByRole('link', { name: /split taxi/i }),
+      screen.queryByRole('link', { name: /split trip/i }),
     ).not.toBeInTheDocument()
   })
 

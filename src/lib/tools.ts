@@ -41,6 +41,14 @@ export const TOOLS: Tool[] = [
     descKey: 'toolPercentageDesc',
   },
   {
+    id: 'split-taxi',
+    path: '/split-taxi',
+    icon: CarTaxiFrontIcon,
+    nameKey: 'toolTaxiName',
+    descKey: 'toolTaxiDesc',
+    beta: true,
+  },
+  {
     id: 'split-group-order',
     path: '/split-group-order',
     icon: BikeIcon,
@@ -55,13 +63,6 @@ export const TOOLS: Tool[] = [
     nameKey: 'toolGroupMealName',
     descKey: 'toolGroupMealDesc',
     beta: true,
-  },
-  {
-    id: 'split-taxi',
-    path: null,
-    icon: CarTaxiFrontIcon,
-    nameKey: 'toolTaxiName',
-    descKey: 'toolTaxiDesc',
   },
   {
     id: 'split-trip',

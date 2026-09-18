@@ -68,6 +68,18 @@ const PAGES: Record<string, Record<SeoLang, PageMeta>> = {
         'What is 80% of 1,500? Take 60% off 5,000? Four everyday percentage questions, answered as you type.',
     },
   },
+  '/split-taxi': {
+    th: {
+      title: 'ค่าแท็กซี่หารกัน — ลงคนละที่ จ่ายคนละเท่าไหร่ | AppHarn',
+      description:
+        'หารค่าแท็กซี่ตามระยะที่นั่งจริง ใครลงก่อนจ่ายน้อยกว่า คิดจากมิเตอร์ทีละช่วง ไม่ใช่หารยอดสุดท้ายเท่ากัน',
+    },
+    en: {
+      title: 'Split Taxi — everyone pays for the stretch they rode | AppHarn',
+      description:
+        'Share a taxi fare by meter segments rather than dividing the final total. Whoever gets out first pays less.',
+    },
+  },
   '/split-group-order': {
     th: {
       title: 'หารค่า GrabFood — สั่งรวมแล้วใครจ่ายเท่าไหร่ | AppHarn',

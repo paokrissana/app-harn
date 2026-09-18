@@ -68,6 +68,42 @@ const PAGES: Record<string, Record<SeoLang, PageMeta>> = {
         'What is 80% of 1,500? Take 60% off 5,000? Four everyday percentage questions, answered as you type.',
     },
   },
+  '/vat': {
+    th: {
+      title: 'คิด VAT 7% — บวก VAT หรือถอด VAT ออกจากราคา | AppHarn',
+      description:
+        'คิด VAT 7% ทั้งบวกเข้าและถอดออก ราคารวม VAT แล้วอยากรู้ราคาก่อน VAT ต้องหาร ไม่ใช่ลบเปอร์เซ็นต์ออก',
+    },
+    en: {
+      title: 'VAT Calculator — add 7% VAT or take it back out | AppHarn',
+      description:
+        'Add VAT to a price, or work out the price before VAT. Removing VAT means dividing, not subtracting the percentage.',
+    },
+  },
+  '/service-charge': {
+    th: {
+      title: 'คิด Service Charge — ค่าบริการ 10% บวก VAT 7% | AppHarn',
+      description:
+        'คิดยอดบิลร้านอาหารจริง ค่าบริการคิดจากค่าอาหารก่อน แล้ว VAT คิดจากทั้งสองอย่าง เลยไม่ใช่ 17% รวดเดียว',
+    },
+    en: {
+      title: 'Service Charge Calculator — 10% service plus 7% VAT | AppHarn',
+      description:
+        'What a restaurant bill really comes to. Service charge goes on the food, then VAT on both — so 10% and 7% is not 17%.',
+    },
+  },
+  '/tip': {
+    th: {
+      title: 'คิดทิป — บวกทิปแล้วหารกันคนละเท่าไหร่ | AppHarn',
+      description:
+        'คิดทิปจากยอดบิล แล้วหารกับเพื่อนได้ในหน้าเดียว บอกทั้งยอดรวมและยอดที่แต่ละคนต้องจ่าย',
+    },
+    en: {
+      title: 'Tip Calculator — add a tip and split the bill | AppHarn',
+      description:
+        'Work out a tip on a bill, and split the total between however many people, on one page.',
+    },
+  },
   '/split-taxi': {
     th: {
       title: 'ค่าแท็กซี่หารกัน — ลงคนละที่ จ่ายคนละเท่าไหร่ | AppHarn',

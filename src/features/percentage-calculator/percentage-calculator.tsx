@@ -15,7 +15,7 @@ import {
   calculatePercentageRelation,
   PERCENTAGE_MODES,
   type PercentageMode,
-} from './percentage'
+} from '@/shared/lib/percentage'
 import {
   isAnswerable,
   MODE_FIELDS,

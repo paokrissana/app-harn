@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import { formatAmount } from '@/shared/lib/money'
 import {
+  addVat,
   calculateDiscount,
+  calculateTip,
   calculateIncrease,
   calculatePercentageOf,
   calculatePercentageRelation,
-} from './percentage'
+  removeVat,
+  restaurantCharges,
+} from '@/shared/lib/percentage'
 
 describe('calculatePercentageOf', () => {
   it('answers the headline case: 80% of 1,500', () => {
@@ -135,5 +139,100 @@ describe('floating point, as the user sees it', () => {
 
   it('keeps two decimals when there are any', () => {
     expect(formatAmount(1200.5)).toBe('1,200.50')
+  })
+})
+
+describe('addVat', () => {
+  it('puts 7% on a net price', () => {
+    expect(addVat(100, 7)).toEqual({ vat: 7, total: 107 })
+  })
+
+  it('changes nothing at 0%', () => {
+    expect(addVat(100, 0)).toEqual({ vat: 0, total: 100 })
+  })
+})
+
+describe('removeVat', () => {
+  it('takes VAT back out of a price that includes it', () => {
+    const { net, vat } = removeVat(107, 7)
+    expect(net).toBeCloseTo(100)
+    expect(vat).toBeCloseTo(7)
+  })
+
+  it('is not the same as subtracting the percentage', () => {
+    /*
+     * The mistake this calculator exists to prevent. VAT was charged on the
+     * smaller number, so coming back means dividing by 1.07 — subtracting 7%
+     * lands 49 satang low on a 107 baht bill, and further out as it grows.
+     */
+    const { net } = removeVat(107, 7)
+    const wrong = 107 - (107 * 7) / 100
+
+    expect(net).toBeCloseTo(100)
+    expect(wrong).toBeCloseTo(99.51)
+    expect(net).not.toBeCloseTo(wrong, 1)
+  })
+
+  it('round-trips with addVat', () => {
+    for (const gross of [107, 1070, 53.5, 999.99]) {
+      const { net } = removeVat(gross, 7)
+      expect(addVat(net, 7).total).toBeCloseTo(gross)
+    }
+  })
+
+  it('leaves the price alone at 0%', () => {
+    expect(removeVat(100, 0)).toEqual({ net: 100, vat: 0 })
+  })
+})
+
+describe('restaurantCharges', () => {
+  it('puts VAT on the service charge as well as the food', () => {
+    // 1,000 + 10% = 1,100, then 7% of that = 1,177 — not 1,170.
+    const { serviceCharge, vat, total } = restaurantCharges(1000, 10, 7)
+    expect(serviceCharge).toBe(100)
+    expect(vat).toBeCloseTo(77)
+    expect(total).toBeCloseTo(1177)
+  })
+
+  it('is not a single combined percentage', () => {
+    const combined = 1000 * 1.17
+    expect(restaurantCharges(1000, 10, 7).total).not.toBeCloseTo(combined, 1)
+  })
+
+  it('is just the subtotal when neither charge applies', () => {
+    expect(restaurantCharges(1000, 0, 0)).toEqual({
+      serviceCharge: 0,
+      vat: 0,
+      total: 1000,
+    })
+  })
+
+  it('handles VAT only, for a place with no service charge', () => {
+    expect(restaurantCharges(1000, 0, 7).total).toBeCloseTo(1070)
+  })
+})
+
+describe('calculateTip', () => {
+  it('adds a tip to a bill', () => {
+    expect(calculateTip(1000, 10)).toEqual({ tip: 100, total: 1100, each: 1100 })
+  })
+
+  it('splits the total between people', () => {
+    const { each } = calculateTip(1000, 10, 4)
+    expect(each).toBeCloseTo(275)
+  })
+
+  it('treats a nonsense headcount as one', () => {
+    // A bill split zero ways has no answer; the whole total beats Infinity.
+    expect(calculateTip(1000, 10, 0).each).toBe(1100)
+    expect(calculateTip(1000, 10, -3).each).toBe(1100)
+  })
+
+  it('ignores a fractional headcount', () => {
+    expect(calculateTip(1000, 10, 2.9).each).toBeCloseTo(550)
+  })
+
+  it('still answers with no tip at all', () => {
+    expect(calculateTip(1000, 0, 2)).toEqual({ tip: 0, total: 1000, each: 500 })
   })
 })

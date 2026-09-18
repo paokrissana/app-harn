@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import type { Bill } from '@/shared/lib/bill'
 import { formatBaht } from '@/shared/lib/money'
+import { restaurantCharges } from '@/shared/lib/percentage'
 import type { TranslationKey } from '@/i18n/translations'
 
 type Translate = (
@@ -160,17 +161,18 @@ export function createGroupMealSchema(t: Translate) {
 }
 
 /**
- * Food plus service charge plus VAT, in the order a Thai receipt applies them:
- * service charge on the food, then VAT on both. VAT is charged on the service
- * charge as well, which is why this cannot be a single combined percentage.
+ * What the dishes come to once the restaurant has added its charges.
+ *
+ * The arithmetic lives in `shared/lib/percentage.ts`, where the standalone
+ * Service Charge calculator uses it too. This keeps the name that reads best
+ * against a bill.
  */
 export function chargedTotal(
   food: number,
   serviceChargePct: number,
   vatPct: number,
 ): number {
-  const withService = food * (1 + serviceChargePct / 100)
-  return withService * (1 + vatPct / 100)
+  return restaurantCharges(food, serviceChargePct, vatPct).total
 }
 
 type GroupMealSchema = ReturnType<typeof createGroupMealSchema>

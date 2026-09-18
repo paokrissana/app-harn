@@ -32,26 +32,33 @@ actually work. There is no third document.
 
 Three tools are built and live:
 
+Listed in the order the home page shows them — the finished tools first, then
+the two still in beta.
+
 | Tool | Route | What it answers |
 | --- | --- | --- |
 | Split Meal | `/split-meal` | What *I* owe when somebody else paid the whole bill |
-| Split Group Order | `/split-group-order` | What everyone owes *me* after I ordered delivery |
-| Split Group Meal | `/split-group-meal` | Everyone's share of one restaurant bill |
 | Percentage Calculator | `/percentage` | A percentage, a discount, a rise, or one amount as a percentage of another |
+| Split Group Order *(beta)* | `/split-group-order` | What everyone owes *me* after I ordered delivery |
+| Split Group Meal *(beta)* | `/split-group-meal` | Everyone's share of one restaurant bill |
 
 Five more appear on the home page as dimmed "coming soon" cards: Split Taxi,
 Split Trip, Split Rent, Split Shopping, Split Utilities.
 
-The first three split a bill between people; the Percentage Calculator is the
+Three of them split a bill between people; the Percentage Calculator is the
 first of the standalone calculators. Once there are two or three of those, the
 home page will want grouping — one flat list stops reading well when the cards
 answer different kinds of question.
 
+Order is not alphabetical or chronological: a tool nobody has to distrust comes
+before one wearing a beta badge, and a card nobody can tap comes last.
+
 Split Meal and Split Group Order point in **opposite directions** — money out
 versus money back. That is deliberate and is what distinguishes them.
 
-Split Group Order carries a beta badge: its maths reconciles, but it has fewer
-fees than the spec calls for.
+Split Group Order carries a beta badge while its numbers are checked against
+more real receipts. It now covers every fee and discount strategy its spec asks
+for.
 
 ---
 
@@ -59,15 +66,14 @@ fees than the spec calls for.
 
 ### Next
 
-1. **Finish Split Group Order** — service fee, small-order fee, tip, and the
-   Equal and Payer-Only discount strategies. The engine already splits a fee
-   evenly or proportionally, so these are rows in a form, not new maths.
-2. **Journey Split** — segment-based fare splitting (see below).
+1. **Journey Split** — segment-based fare splitting (see below).
+2. **The standalone calculators** — Discount, VAT, Service Charge, Tip. Each is
+   roughly an hour on top of the percentage engine, and each is its own landing
+   page for a search like `คิด VAT 7%`.
 
 ### Later
 
-Split Trip, Split Hotel, Split Rent, Split Utilities, Split Shopping, and the
-standalone calculators: Discount, VAT, Service Charge, Tip.
+Split Trip, Split Hotel, Split Rent, Split Utilities, Split Shopping.
 
 ### Product expansion, not scheduled
 
@@ -188,9 +194,19 @@ decides where the money goes.
 `promos`. A promo attached to a fee comes off that fee before it is split, so a
 free-delivery voucher can never reach the food.
 
-**Discount** — `id`, `kind` (`percent` or `amount`), `value`. Percentages come
-off the *original* food total, so two promos do not compound — that is how a
-receipt lists them.
+**Discount** — `id`, `kind` (`percent` or `amount`), `value`, and an
+`allocation`. Percentages come off the *original* food total, so two promos do
+not compound — that is how a receipt lists them.
+
+Allocation says who a promo belongs to, because that is a fact about the promo
+rather than about the order: `proportional` by what each person ordered (the
+default, and what a receipt implies), `equal` for a voucher the group shares, or
+`payer` for the payer's own points or credit. Several promos on one order can
+each use a different rule; when their sum is capped at the food total, every
+share is scaled by the same factor so they still add up.
+
+A promo attached to a **fee** has no allocation — it comes off the fee before
+the fee is split, so it never lands on one person rather than another.
 
 **Bill** — participants, items, fees, discounts, `payerId`, optional
 `headcount` for a group larger than the people listed.

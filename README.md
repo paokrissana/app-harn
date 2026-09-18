@@ -67,10 +67,18 @@ facts**. Gyoza tapped by Alex but halved with Bianca sits under Alex and costs
 them 60 each. So each line records `addedBy` (where it appears in the form) and
 `sharedBy` (where the money goes), and you tick the sharers.
 
-- The **delivery fee splits evenly** — it buys the trip, not the food.
-- **Discounts split in proportion** to what each person ordered, and there can
-  be several. Every percentage comes off the *original* food total, so two
-  promos do not compound — that is how the receipt lists them.
+- **Four fees, each split by what it buys.** The **delivery fee** and the
+  **small order fee** divide evenly — the trip happens once, and the fee for
+  ordering too little is the same whoever ordered. The **service fee** is a
+  percentage of the order on any receipt that carries one, so it follows what
+  each person ordered. The **tip** goes to the rider for that same one trip, so
+  it divides evenly like delivery. Leave any of them at 0.
+- **Each discount says who it belongs to.** By order size (the default, and
+  what a receipt implies), split evenly, or the payer's alone — a voucher the
+  group shares and your own loyalty points are not the same thing. There can be
+  several, each with its own rule. Every percentage comes off the *original*
+  food total, so two promos do not compound, and a percentage over 100 is
+  refused as the typo it is.
 - **Delivery promos are their own thing**, attached to the fee. A free-delivery
   voucher cancels the fee before it is split and can never reach the food.
 - Everyone but the payer is **rounded to whole Baht**, since they are the ones

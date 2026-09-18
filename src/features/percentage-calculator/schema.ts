@@ -23,6 +23,15 @@ export interface ModeFields {
   amountLabel: TranslationKey
 }
 
+/** The short label on each tab. Words, not glyphs — four symbols in a row said
+ * nothing about what any of them did. */
+export const MODE_TAB: Record<PercentageMode, TranslationKey> = {
+  of: 'pcTabOf',
+  discount: 'pcTabDiscount',
+  increase: 'pcTabIncrease',
+  relation: 'pcTabRelation',
+}
+
 /** The spoken name of each question, for screen readers and the page copy. */
 export const MODE_LABEL: Record<PercentageMode, TranslationKey> = {
   of: 'pcModeOf',

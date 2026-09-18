@@ -3,7 +3,8 @@ import type { GroupOrderFormInput } from './schema'
 
 type Person = GroupOrderFormInput['people'][number]
 type Item = GroupOrderFormInput['items'][number]
-type Promo = GroupOrderFormInput['discounts'][number]
+type Promo = GroupOrderFormInput['deliveryPromos'][number]
+type Discount = GroupOrderFormInput['discounts'][number]
 
 export function newPerson(): Person {
   return { id: newId(), name: '' }
@@ -18,6 +19,11 @@ export function newPromo(): Promo {
   return { id: newId(), kind: 'percent', value: '' }
 }
 
+/** A discount also needs to say whose it is. */
+export function newDiscount(): Discount {
+  return { ...newPromo(), allocation: 'proportional' }
+}
+
 /** A fresh order: two people, since one cannot split anything. */
 export function emptyOrder(): GroupOrderFormInput {
   const [first, second] = [newPerson(), newPerson()]
@@ -27,6 +33,11 @@ export function emptyOrder(): GroupOrderFormInput {
     headcount: '2',
     items: [],
     deliveryFee: '',
+    // The three optional fees start at zero rather than blank: most orders have
+    // none, and an empty required box would block the form before anyone typed.
+    serviceFee: '0',
+    smallOrderFee: '0',
+    tip: '0',
     deliveryPromos: [],
     discounts: [],
     payerId: first.id,

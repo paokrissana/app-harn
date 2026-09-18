@@ -113,6 +113,29 @@ describe('routing', () => {
     expect(screen.queryByLabelText(/total bill/i)).not.toBeInTheDocument()
   })
 
+  it('leads with the finished tools, before the ones still in beta', () => {
+    renderAt('/')
+
+    const names = screen
+      .getAllByRole('link')
+      .map((link) => link.textContent ?? '')
+      .filter((text) => text.includes('Split') || text.includes('Percentage'))
+
+    expect(names[0]).toContain('Split Meal')
+    expect(names[1]).toContain('Percentage Calculator')
+  })
+
+  it('does not call the Percentage Calculator a beta', () => {
+    renderAt('/')
+
+    const card = screen
+      .getAllByRole('link')
+      .find((link) => link.textContent?.includes('Percentage Calculator'))!
+
+    expect(card).not.toHaveTextContent(/beta/i)
+    expect(card).not.toHaveTextContent(/coming soon/i)
+  })
+
   it('keeps the brand as a way home on every page', () => {
     renderAt('/split-meal')
     const header = screen.getByRole('banner')

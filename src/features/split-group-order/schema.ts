@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { Bill } from '@/shared/lib/bill'
+import { discountValue, type Bill } from '@/shared/lib/bill'
 import type { TranslationKey } from '@/i18n/translations'
 
 type Translate = (
@@ -24,11 +24,37 @@ export function createGroupOrderSchema(t: Translate) {
     .refine((v) => Number(v) >= 0, t('cannotBeNegative'))
     .transform((v) => Number(v))
 
-  const promoSchema = z.object({
-    id: z.string(),
-    kind: z.enum(['percent', 'amount']),
-    value: money,
-  })
+  const percentWithinBounds = (promo: { kind: string; value: number }) =>
+    promo.kind !== 'percent' || promo.value <= 100
+
+  const percentTooBig = {
+    error: t('goPercentAtMost100'),
+    path: ['value'],
+  }
+
+  /**
+   * A promo attached to a fee. No allocation: it comes off the fee before the
+   * fee is split, so it never lands on one person rather than another.
+   */
+  const promoSchema = z
+    .object({
+      id: z.string(),
+      kind: z.enum(['percent', 'amount']),
+      value: money,
+    })
+    .refine(percentWithinBounds, percentTooBig)
+
+  /** A promo off the food, which does have to land somewhere. */
+  const discountSchema = z
+    .object({
+      id: z.string(),
+      kind: z.enum(['percent', 'amount']),
+      value: money,
+      allocation: z
+        .enum(['proportional', 'equal', 'payer'])
+        .default('proportional'),
+    })
+    .refine(percentWithinBounds, percentTooBig)
 
   const personSchema = z.object({
     id: z.string(),
@@ -62,8 +88,11 @@ export function createGroupOrderSchema(t: Translate) {
       headcount: headcountField,
       items: z.array(itemSchema).min(1, t('goAddAtLeastOneItem')),
       deliveryFee: money,
+      serviceFee: money,
+      smallOrderFee: money,
+      tip: money,
       deliveryPromos: z.array(promoSchema),
-      discounts: z.array(promoSchema),
+      discounts: z.array(discountSchema),
       payerId: z.string(),
     })
     .superRefine((data, ctx) => {
@@ -95,11 +124,7 @@ export function createGroupOrderSchema(t: Translate) {
           ? Math.min(data.people.length / data.headcount, 1)
           : 1
       const off = data.discounts.reduce(
-        (sum, discount) =>
-          sum +
-          (discount.kind === 'percent'
-            ? food * (discount.value / 100)
-            : discount.value * covered),
+        (sum, discount) => sum + discountValue(discount, food, covered),
         0,
       )
       if (food > 0 && off > food) {
@@ -161,15 +186,38 @@ export function toBill(values: GroupOrderFormOutput): Bill {
       addedBy: item.addedBy,
       sharedBy: item.sharedBy,
     })),
+    /*
+     * Each fee splits by what it buys, not by a global default.
+     *
+     * Delivery and the small-order fee buy the whole order — the trip happens
+     * once, and the fee for ordering too little is the same whoever ordered.
+     * The service fee is a percentage of the order on every receipt that
+     * carries one, so spreading it by what each person ordered reproduces the
+     * share they were actually charged. A tip goes to the rider for the same
+     * one trip, so it follows delivery rather than the food.
+     */
     fees: [
       {
         id: 'delivery',
-        // Display comes from the translations; this is just a handle.
+        // Display comes from the translations; these are just handles.
         label: 'delivery',
         amount: values.deliveryFee,
         split: 'even',
         promos: values.deliveryPromos,
       },
+      {
+        id: 'service-fee',
+        label: 'serviceFee',
+        amount: values.serviceFee,
+        split: 'proportional',
+      },
+      {
+        id: 'small-order',
+        label: 'smallOrderFee',
+        amount: values.smallOrderFee,
+        split: 'even',
+      },
+      { id: 'tip', label: 'tip', amount: values.tip, split: 'even' },
     ],
     discounts: values.discounts,
     payerId: values.payerId,

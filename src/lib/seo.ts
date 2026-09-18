@@ -56,6 +56,18 @@ const PAGES: Record<string, Record<SeoLang, PageMeta>> = {
         'Work out what to pay back the person who covered the bill, including service charge, VAT and a tip.',
     },
   },
+  '/percentage': {
+    th: {
+      title: 'คิดเปอร์เซ็นต์ — 80% ของ 1500, ลด 60% เหลือเท่าไหร่ | AppHarn',
+      description:
+        'คิดเปอร์เซ็นต์ของยอดเงิน คิดส่วนลด คิดราคาที่เพิ่มขึ้น และหาว่ายอดหนึ่งเป็นกี่เปอร์เซ็นต์ของอีกยอด',
+    },
+    en: {
+      title: 'Percentage Calculator — discounts, increases and shares | AppHarn',
+      description:
+        'What is 80% of 1,500? Take 60% off 5,000? Four everyday percentage questions, answered as you type.',
+    },
+  },
   '/split-group-order': {
     th: {
       title: 'หารค่า GrabFood — สั่งรวมแล้วใครจ่ายเท่าไหร่ | AppHarn',
@@ -78,18 +90,6 @@ const PAGES: Record<string, Record<SeoLang, PageMeta>> = {
       title: 'Split Group Meal — one restaurant bill, everyone’s share | AppHarn',
       description:
         'Split one restaurant bill by what each person actually ate, with service charge and VAT.',
-    },
-  },
-  '/percentage': {
-    th: {
-      title: 'คิดเปอร์เซ็นต์ — 80% ของ 1500, ลด 60% เหลือเท่าไหร่ | AppHarn',
-      description:
-        'คิดเปอร์เซ็นต์ของยอดเงิน คิดส่วนลด คิดราคาที่เพิ่มขึ้น และหาว่ายอดหนึ่งเป็นกี่เปอร์เซ็นต์ของอีกยอด',
-    },
-    en: {
-      title: 'Percentage Calculator — discounts, increases and shares | AppHarn',
-      description:
-        'What is 80% of 1,500? Take 60% off 5,000? Four everyday percentage questions, answered as you type.',
     },
   },
 }

@@ -435,3 +435,146 @@ describe('sharedPlates', () => {
     }
   })
 })
+
+describe('discount allocation', () => {
+  /** Two people, lopsided orders, so the strategies cannot look alike. */
+  const lopsided = (discounts: Bill['discounts']): Bill => ({
+    participants: [
+      { id: 'alex', name: 'Alex' },
+      { id: 'bianca', name: 'Bianca' },
+    ],
+    items: [
+      { id: '1', title: 'Rice', amount: 300, addedBy: 'alex', sharedBy: ['alex'] },
+      {
+        id: '2',
+        title: 'Soup',
+        amount: 100,
+        addedBy: 'bianca',
+        sharedBy: ['bianca'],
+      },
+    ],
+    fees: [],
+    discounts,
+    payerId: 'alex',
+  })
+
+  const discountFor = (bill: Bill, id: string) =>
+    calculateBill(bill).participants.find(
+      (share) => share.participantId === id,
+    )!.discount
+
+  it('spreads by order size when nothing says otherwise', () => {
+    // 400 of food, 300 of it Alex's, so he carries three quarters of the 80.
+    const bill = lopsided([{ id: 'd', kind: 'amount', value: 80 }])
+    expect(discountFor(bill, 'alex')).toBeCloseTo(60)
+    expect(discountFor(bill, 'bianca')).toBeCloseTo(20)
+  })
+
+  it('splits evenly when told to, whatever people ordered', () => {
+    const bill = lopsided([
+      { id: 'd', kind: 'amount', value: 80, allocation: 'equal' },
+    ])
+    expect(discountFor(bill, 'alex')).toBeCloseTo(40)
+    expect(discountFor(bill, 'bianca')).toBeCloseTo(40)
+  })
+
+  it('gives the whole thing to the payer when it is theirs', () => {
+    const bill = lopsided([
+      { id: 'd', kind: 'amount', value: 80, allocation: 'payer' },
+    ])
+    expect(discountFor(bill, 'alex')).toBeCloseTo(80)
+    expect(discountFor(bill, 'bianca')).toBe(0)
+  })
+
+  it('adds up several promos, each by its own rule', () => {
+    const bill = lopsided([
+      { id: 'a', kind: 'amount', value: 80, allocation: 'equal' },
+      { id: 'b', kind: 'amount', value: 40, allocation: 'payer' },
+    ])
+    // Alex: 40 of the even one plus all 40 of his own. Bianca: 40.
+    expect(discountFor(bill, 'alex')).toBeCloseTo(80)
+    expect(discountFor(bill, 'bianca')).toBeCloseTo(40)
+  })
+
+  it('never lets the shares outrun a capped total', () => {
+    // 600 of promos on 400 of food: capped at 400, and the split follows.
+    const bill = lopsided([
+      { id: 'a', kind: 'amount', value: 300, allocation: 'equal' },
+      { id: 'b', kind: 'amount', value: 300, allocation: 'payer' },
+    ])
+    const result = calculateBill(bill)
+
+    expect(result.discountTotal).toBe(400)
+    const shared = result.participants.reduce(
+      (sum, share) => sum + share.discount,
+      0,
+    )
+    expect(shared).toBeCloseTo(400)
+    expect(result.grandTotal).toBe(0)
+  })
+
+  it('still reconciles to the order total whatever the mix', () => {
+    const bill = lopsided([
+      { id: 'a', kind: 'percent', value: 10 },
+      { id: 'b', kind: 'amount', value: 50, allocation: 'equal' },
+      { id: 'c', kind: 'amount', value: 30, allocation: 'payer' },
+    ])
+    const result = calculateBill(bill)
+    const summed = result.participants.reduce(
+      (sum, share) => sum + share.total,
+      0,
+    )
+
+    expect(summed).toBeCloseTo(result.grandTotal)
+  })
+})
+
+describe('the optional delivery fees', () => {
+  /** One order, one fee at a time, so each split rule shows on its own. */
+  const withFee = (fee: Bill['fees'][number]): Bill => ({
+    participants: [
+      { id: 'alex', name: 'Alex' },
+      { id: 'bianca', name: 'Bianca' },
+    ],
+    items: [
+      { id: '1', title: 'Rice', amount: 300, addedBy: 'alex', sharedBy: ['alex'] },
+      {
+        id: '2',
+        title: 'Soup',
+        amount: 100,
+        addedBy: 'bianca',
+        sharedBy: ['bianca'],
+      },
+    ],
+    fees: [fee],
+    discounts: [],
+    payerId: 'alex',
+  })
+
+  const feesFor = (bill: Bill, id: string) =>
+    calculateBill(bill).participants.find(
+      (share) => share.participantId === id,
+    )!.fees
+
+  it('divides an even fee per head, whatever was ordered', () => {
+    const bill = withFee({ id: 'f', label: 'small', amount: 40, split: 'even' })
+    expect(feesFor(bill, 'alex')).toBeCloseTo(20)
+    expect(feesFor(bill, 'bianca')).toBeCloseTo(20)
+  })
+
+  it('divides a proportional fee by what each person ordered', () => {
+    const bill = withFee({
+      id: 'f',
+      label: 'service',
+      amount: 40,
+      split: 'proportional',
+    })
+    expect(feesFor(bill, 'alex')).toBeCloseTo(30)
+    expect(feesFor(bill, 'bianca')).toBeCloseTo(10)
+  })
+
+  it('charges nothing for a fee left at zero', () => {
+    const bill = withFee({ id: 'f', label: 'tip', amount: 0, split: 'even' })
+    expect(calculateBill(bill).feesTotal).toBe(0)
+  })
+})

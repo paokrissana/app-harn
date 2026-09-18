@@ -1,5 +1,5 @@
 import type { TranslationKey } from '@/i18n/translations'
-import type { PercentageMode } from './percentage'
+import type { PercentageMode } from '@/shared/lib/percentage'
 
 export type Translate = (
   key: TranslationKey,

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRightIcon } from 'lucide-react'
 
-import { TOOLS, type Tool } from '@/lib/tools'
+import { TOOLS, type Tool, type ToolKind } from '@/lib/tools'
 import { resolveDevMode } from '@/lib/dev-mode'
 import { useI18n } from '@/i18n/context'
 import { cn } from '@/lib/utils'
@@ -94,21 +94,45 @@ export function HomePage() {
    */
   const visible = isDevMode ? TOOLS : TOOLS.filter((tool) => tool.path !== null)
 
+  /*
+   * Grouped rather than listed, because the two kinds answer different
+   * questions: somebody working out 7% VAT is not shopping for a way to split
+   * dinner. A heading is only shown when its group has something in it, so
+   * hiding the roadmap never leaves an empty section behind.
+   */
+  const groups: { kind: ToolKind; heading: string }[] = [
+    { kind: 'split', heading: t('homeSplitting') },
+    { kind: 'calculator', heading: t('homeCalculators') },
+  ]
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold tracking-tight text-balance">
         {t('tagline')}
       </h1>
 
-      {/* One column at every width: the shell is a narrow phone-shaped
-          column, and two columns inside it wrap the descriptions to bits. */}
-      <ul className="flex flex-col gap-3">
-        {visible.map((tool) => (
-          <li key={tool.id} className="flex">
-            <ToolCard tool={tool} />
-          </li>
-        ))}
-      </ul>
+      {groups.map(({ kind, heading }) => {
+        const tools = visible.filter((tool) => tool.kind === kind)
+        if (tools.length === 0) return null
+
+        return (
+          <section key={kind} className="flex flex-col gap-3">
+            <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              {heading}
+            </h2>
+
+            {/* One column at every width: the shell is a narrow phone-shaped
+                column, and two columns inside it wrap the descriptions to bits. */}
+            <ul aria-label={heading} className="flex flex-col gap-3">
+              {tools.map((tool) => (
+                <li key={tool.id} className="flex">
+                  <ToolCard tool={tool} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
     </div>
   )
 }

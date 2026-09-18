@@ -30,10 +30,10 @@ actually work. There is no third document.
 
 ## 2. Current state
 
-Five tools are built and live.
+Eight tools are built and live.
 
-Listed in the order the home page shows them — the settled tools first, then
-the three still in beta.
+The home page groups them by the kind of question they answer, and within each
+group the settled tools come before the ones still in beta.
 
 | Tool | Route | What it answers |
 | --- | --- | --- |
@@ -42,14 +42,16 @@ the three still in beta.
 | Split Taxi *(beta)* | `/split-taxi` | Who owes what on a shared ride when people get out at different points |
 | Split Group Order *(beta)* | `/split-group-order` | What everyone owes *me* after I ordered delivery |
 | Split Group Meal *(beta)* | `/split-group-meal` | Everyone's share of one restaurant bill |
+| VAT Calculator | `/vat` | Add VAT, or take it back out of a price that includes it |
+| Service Charge Calculator | `/service-charge` | What a restaurant bill comes to with service and VAT |
+| Tip Calculator | `/tip` | A tip, and what each person pays once it is split |
 
 Four more exist only as roadmap — Split Trip, Split Rent, Split
 Shopping, Split Utilities. They are **hidden** unless dev mode is on (§4).
 
-Four of them split a cost between people; the Percentage Calculator is the
-first of the standalone calculators. Once there are two or three of those, the
-home page will want grouping — one flat list stops reading well when the cards
-answer different kinds of question.
+Four split a cost between people; four are standalone calculators. The home page
+groups them under those two headings, because somebody working out 7% VAT is not
+shopping for a way to split dinner.
 
 Order is not alphabetical or chronological: a tool nobody has to distrust comes
 before one wearing a beta badge, and a card nobody can tap comes last.
@@ -67,11 +69,10 @@ for.
 
 ### Next
 
-1. **The standalone calculators** — Discount, VAT, Service Charge, Tip. Each is
-   roughly an hour on top of the percentage engine, and each is its own landing
-   page for a search like `คิด VAT 7%`.
-2. **A home page that groups its cards.** Five tools of two different kinds now
-   sit in one flat list.
+1. **Take the beta badges off**, once the three split tools have been checked
+   against a real receipt. That is a verification job, not a coding one.
+2. **Split Trip** — the first of the remaining roadmap tools, and the only one
+   with an obvious shape.
 
 ### Later
 
@@ -150,6 +151,13 @@ badge already says to check them — and `/split-group-order` is the page carryi
 the GrabFood search, so hiding it would throw away the best SEO term the site
 has. Hiding a working tool costs more than a badge does.
 
+**No standalone Discount calculator.** It was on the roadmap and is not built,
+deliberately: the Percentage Calculator's discount mode already answers exactly
+that question, and its Thai title already carries `ลด 60% เหลือเท่าไหร่`. A second
+page would compete with it for the same query and answer it no better. The three
+that were built each do something that page cannot — reverse VAT, the
+service-charge-then-VAT order, and splitting a tipped bill.
+
 **A calculator with two boxes has no Calculate button.** The Percentage
 Calculator answers live as you type; the split tools keep their button because
 they have a form's worth of input and a result worth pausing on. Follow the
@@ -187,11 +195,12 @@ src/
   features/
     split-group-order/     form, schema, mapping to Bill
     split-group-meal/      the same, for one restaurant bill
-    percentage-calculator/ four modes, pure maths, no Bill model
+    percentage-calculator/ four modes, no Bill model
+    calculators/           VAT, service charge and tip, over shared maths
     journey-split/         a second engine — a fare split by meter segments
   shared/
     components/            reused across features
-    lib/                   bill.ts (the main engine), money.ts, id.ts
+    lib/                   bill.ts (the main engine), percentage.ts, money.ts, id.ts
   pages/                   one file per route
   components/              app shell, Split Meal, ui/ primitives
   lib/                     Split Meal logic, tool registry

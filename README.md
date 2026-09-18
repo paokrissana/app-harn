@@ -4,7 +4,8 @@ Calculators for splitting expenses. Frontend only — everything runs locally in
 the browser, no login, no backend. See [CLAUDE.md](CLAUDE.md) for the vision,
 architecture and roadmap.
 
-Five tools so far:
+Eight tools so far — four for splitting a cost between people, four standalone
+calculators:
 
 - **Split Meal** — what you owe when somebody else paid the whole bill.
 - **Split Group Order** — what everyone owes you when you ordered delivery for
@@ -14,6 +15,10 @@ Five tools so far:
 - **Percentage Calculator** — a percentage, a discount, a price rise, or one
   amount as a percentage of another.
 - **Split Taxi** — a shared ride where people get out at different points.
+- **VAT Calculator** — add VAT, or take it back out of a price that includes it.
+- **Service Charge Calculator** — what a restaurant bill comes to with service
+  charge and VAT.
+- **Tip Calculator** — a tip, and what each person pays once it is split.
 
 The first two are deliberately one-sided in opposite directions — money out
 versus money back. See [CLAUDE.md](CLAUDE.md) for what is still to come.
@@ -268,6 +273,35 @@ and an aliased import would drag the app's path mapping into the build config's
 resolution. It declares its own language union, and `seo.test.ts` fails to
 compile if that ever drifts from the app's `Lang`.
 
+## The standalone calculators
+
+Three small pages over the same pure maths in `src/shared/lib/percentage.ts`,
+each answering one question with no Calculate button.
+
+**VAT** (`/vat`) — both directions. Adding 7% is arithmetic anyone can do; the
+reason the page exists is the other way round. ฿107 including 7% VAT is **฿100**
+before it, not ฿99.51 — the VAT was charged on the smaller number, so coming
+back means dividing by 1.07 rather than subtracting 7%. There is a test that
+pins exactly that difference.
+
+**Service charge** (`/service-charge`) — what a restaurant bill really comes to.
+The point is the order: service charge goes on the food, then VAT goes on
+**both**. On ฿1,000 that is ฿1,177, and a flat 17% would say ฿1,170. The working
+is shown line by line so the difference is visible rather than asserted.
+
+**Tip** (`/tip`) — a tip on a bill, and what each person pays once it is split.
+Splitting lives here rather than in its own tool because "what is 10% of this"
+is almost always followed by "so how much each?", and two pages would mean
+typing the same numbers twice.
+
+### There is no Discount calculator
+
+It was on the roadmap and was deliberately not built. The Percentage
+Calculator's discount mode already answers that exact question, and its Thai
+title already carries `ลด 60% เหลือเท่าไหร่`. A second page would compete with it
+for the same search and answer it no better. Each of the three above does
+something that page cannot.
+
 ## Dev mode
 
 The home page lists only tools that exist. The ones still on the roadmap are
@@ -311,6 +345,9 @@ the numbers.
 | `/split-group-meal` | Split Group Meal                  |
 | `/percentage` | Percentage Calculator                  |
 | `/split-taxi` | Split Taxi                            |
+| `/vat` | VAT Calculator                               |
+| `/service-charge` | Service Charge Calculator         |
+| `/tip` | Tip Calculator                               |
 | anything else | redirects home                          |
 
 Tools that are not built yet appear on the home page dimmed, badged `Soon`, and
@@ -347,6 +384,8 @@ npm run lint       # oxlint
 - `src/features/split-group-meal/` — the same, for one restaurant bill
 - `src/features/percentage-calculator/` — four modes, pure maths, no `Bill`
 - `src/features/journey-split/` — the fare engine, its schema and form
+- `src/features/calculators/` — VAT, service charge and tip
+- `src/shared/lib/percentage.ts` — the percentage maths all of them share
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)
 - `src/lib/history.ts` — saved-bill storage, naming and dates (unit tested)
 - `src/lib/schema.ts` — Zod form schema

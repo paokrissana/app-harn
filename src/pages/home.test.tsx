@@ -143,16 +143,34 @@ describe('routing', () => {
     expect(screen.queryByLabelText(/total bill/i)).not.toBeInTheDocument()
   })
 
-  it('leads with the finished tools, before the ones still in beta', () => {
+  it('groups the tools by the kind of question they answer', () => {
     renderAt('/')
 
-    const names = screen
-      .getAllByRole('link')
-      .map((link) => link.textContent ?? '')
-      .filter((text) => text.includes('Split') || text.includes('Percentage'))
+    const splitting = within(
+      screen.getByRole('list', { name: /splitting with people/i }),
+    )
+    const calculators = within(
+      screen.getByRole('list', { name: /quick calculators/i }),
+    )
 
-    expect(names[0]).toContain('Split Meal')
-    expect(names[1]).toContain('Percentage Calculator')
+    expect(splitting.getByText('Split Meal')).toBeInTheDocument()
+    expect(calculators.getByText('Percentage Calculator')).toBeInTheDocument()
+    expect(calculators.getByText('VAT Calculator')).toBeInTheDocument()
+
+    // A splitting tool never appears among the calculators, or vice versa.
+    expect(calculators.queryByText('Split Meal')).toBeNull()
+    expect(splitting.queryByText('VAT Calculator')).toBeNull()
+  })
+
+  it('leads each group with the tools that carry no badge', () => {
+    renderAt('/')
+
+    const splitting = within(
+      screen.getByRole('list', { name: /splitting with people/i }),
+    )
+    const first = splitting.getAllByRole('listitem')[0]
+    expect(first).toHaveTextContent('Split Meal')
+    expect(first).not.toHaveTextContent(/beta/i)
   })
 
   it('does not call the Percentage Calculator a beta', () => {

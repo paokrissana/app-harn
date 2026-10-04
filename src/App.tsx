@@ -5,6 +5,7 @@ import { HomePage } from '@/pages/home'
 import { PercentagePage } from '@/pages/percentage'
 import { SplitGroupMealPage } from '@/pages/split-group-meal'
 import { ServiceChargePage } from '@/pages/service-charge'
+import { SplitSushiPage } from '@/pages/split-sushi'
 import { SplitTaxiPage } from '@/pages/split-taxi'
 import { TipPage } from '@/pages/tip'
 import { VatPage } from '@/pages/vat'
@@ -22,6 +23,7 @@ export function AppRoutes() {
         <Route path="split-group-meal" element={<SplitGroupMealPage />} />
         <Route path="percentage" element={<PercentagePage />} />
         <Route path="split-taxi" element={<SplitTaxiPage />} />
+        <Route path="split-sushi" element={<SplitSushiPage />} />
         <Route path="vat" element={<VatPage />} />
         <Route path="service-charge" element={<ServiceChargePage />} />
         <Route path="tip" element={<TipPage />} />

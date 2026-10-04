@@ -1,6 +1,7 @@
 import {
   BikeIcon,
   CarTaxiFrontIcon,
+  FishIcon,
   HandPlatterIcon,
   HandCoinsIcon,
   HouseIcon,
@@ -89,6 +90,15 @@ export const TOOLS: Tool[] = [
     icon: CarTaxiFrontIcon,
     nameKey: 'toolTaxiName',
     descKey: 'toolTaxiDesc',
+    beta: true,
+  },
+  {
+    id: 'split-sushi',
+    kind: 'split',
+    path: '/split-sushi',
+    icon: FishIcon,
+    nameKey: 'toolSushiName',
+    descKey: 'toolSushiDesc',
     beta: true,
   },
   {

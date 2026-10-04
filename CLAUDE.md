@@ -30,7 +30,7 @@ actually work. There is no third document.
 
 ## 2. Current state
 
-Eight tools are built and live.
+Nine tools are built and live.
 
 The home page groups them by the kind of question they answer, and within each
 group the settled tools come before the ones still in beta.
@@ -40,6 +40,7 @@ group the settled tools come before the ones still in beta.
 | Split Meal | `/split-meal` | What *I* owe when somebody else paid the whole bill |
 | Percentage Calculator | `/percentage` | A percentage, a discount, a rise, or one amount as a percentage of another |
 | Split Taxi *(beta)* | `/split-taxi` | Who owes what on a shared ride when people get out at different points |
+| Split Sushi *(beta)* | `/split-sushi` | Conveyor-belt sushi — everyone's plates, at that restaurant's prices |
 | Split Group Order *(beta)* | `/split-group-order` | What everyone owes *me* after I ordered delivery |
 | Split Group Meal *(beta)* | `/split-group-meal` | Everyone's share of one restaurant bill |
 | VAT Calculator | `/vat` | Add VAT, or take it back out of a price that includes it |
@@ -49,7 +50,7 @@ group the settled tools come before the ones still in beta.
 Four more exist only as roadmap — Split Trip, Split Rent, Split
 Shopping, Split Utilities. They are **hidden** unless dev mode is on (§4).
 
-Four split a cost between people; four are standalone calculators. The home page
+Five split a cost between people; four are standalone calculators. The home page
 groups them under those two headings, because somebody working out 7% VAT is not
 shopping for a way to split dinner.
 
@@ -82,6 +83,25 @@ Split Trip, Split Hotel, Split Rent, Split Utilities, Split Shopping.
 
 Share links, history beyond Split Meal, receipt OCR, PromptPay QR, PWA, trip
 mode, favourite groups.
+
+### Why Split Sushi needs no engine
+
+Split Sushi only answers one question of its own — *how much food did each
+person have, at this restaurant's prices* — and hands everything else to
+`bill.ts`. Each person's plates become their own `BillItem`s, service charge and
+VAT arrive as proportional fees, and the discount, rounding and transfers are the
+shared engine's. There is no sushi-specific fee maths anywhere.
+
+Prices belong to a restaurant, never to a colour, and a session **copies** them
+when it starts. That copy is the snapshot: once a meal has its prices, nothing
+reads the restaurant again, so editing or forgetting a saved restaurant later
+can never change a total somebody already paid by.
+
+The session in progress is saved to `localStorage` as it changes. Plates get
+counted across a whole meal, and a phone closing the tab halfway should not cost
+anyone their tapping. Unlike the other split tools it is held in plain state with
+pure helpers rather than React Hook Form — the input is dozens of taps on
+counters, not a form to submit.
 
 ### Why Split Taxi has its own engine
 
@@ -151,6 +171,21 @@ badge already says to check them — and `/split-group-order` is the page carryi
 the GrabFood search, so hiding it would throw away the best SEO term the site
 has. Hiding a working tool costs more than a badge does.
 
+**A discount comes off before service charge and VAT.** Thai VAT is charged on
+what was actually paid for the goods, after any discount given at the time of
+sale — so the discount comes off the food first, and service charge and VAT are
+worked out on what is left. On ฿1,200 with ฿100 off, that is ฿1,294.70; taking
+the discount off at the end would say ฿1,312.40 and charge VAT on money nobody
+paid. This is the rule for every tool, not one: Split Sushi applies it today, and
+Split Group Meal must follow it the day it gains a discount.
+
+**No restaurant presets with invented prices.** A preset puts a real
+restaurant's name next to a price, and people trust that pairing even with a
+confirm step in front of it. Split Sushi's preset list therefore ships
+**empty**: an entry belongs there only once its prices come from that
+restaurant's own menu or a receipt. Until then a new restaurant starts with the
+usual four plate colours and blank prices, and anyone can save their own.
+
 **No standalone Discount calculator.** It was on the roadmap and is not built,
 deliberately: the Percentage Calculator's discount mode already answers exactly
 that question, and its Thai title already carries `ลด 60% เหลือเท่าไหร่`. A second
@@ -198,6 +233,7 @@ src/
     percentage-calculator/ four modes, no Bill model
     calculators/           VAT, service charge and tip, over shared maths
     journey-split/         a second engine — a fare split by meter segments
+    sushi-split/           plates at a restaurant's prices, handed to bill.ts
   shared/
     components/            reused across features
     lib/                   bill.ts (the main engine), percentage.ts, money.ts, id.ts
@@ -289,6 +325,7 @@ Feature pages should target real searches, most of them Thai:
 หารค่าอาหาร · หารค่าอาหารหลายคน · หารค่า GrabFood
 คิด VAT 7% · คิด Service Charge
 80% ของ 1500 · ลด 60% เหลือเท่าไหร่ · ค่าแท็กซี่หารกัน
+หารค่าซูชิ · หารเงินร้านซูชิสายพาน
 ```
 
 Each route now carries its own title and description, in `src/lib/seo.ts`, and

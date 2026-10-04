@@ -4,7 +4,7 @@ Calculators for splitting expenses. Frontend only — everything runs locally in
 the browser, no login, no backend. See [CLAUDE.md](CLAUDE.md) for the vision,
 architecture and roadmap.
 
-Eight tools so far — four for splitting a cost between people, four standalone
+Nine tools so far — five for splitting a cost between people, four standalone
 calculators:
 
 - **Split Meal** — what you owe when somebody else paid the whole bill.
@@ -15,6 +15,7 @@ calculators:
 - **Percentage Calculator** — a percentage, a discount, a price rise, or one
   amount as a percentage of another.
 - **Split Taxi** — a shared ride where people get out at different points.
+- **Split Sushi** — conveyor-belt sushi, by the plates each person ate.
 - **VAT Calculator** — add VAT, or take it back out of a price that includes it.
 - **Service Charge Calculator** — what a restaurant bill comes to with service
   charge and VAT.
@@ -220,6 +221,49 @@ order. Sequence is the whole model, and `Bill` has no notion of it.
 Nothing in it is taxi-specific. A meter reading is just a running total, so a
 van, a ride-hailing fare or a carpool would reuse it unchanged.
 
+## Split Sushi
+
+Conveyor-belt sushi, where a dish's price is the colour of its plate. Everyone
+counts their own plates, one person pays, and Harn works out what each owes.
+
+**Prices belong to the restaurant, never to the colour.** Red is ฿40 at one place
+and ฿50 at the next, so there is no table of colour prices anywhere. A restaurant
+carries its own list — any labels, not only colours: Gold, Special, Pattern A —
+and the colour is a swatch for the eye, never the only way to tell plates apart.
+
+**A session copies the prices when it starts**, and never reads the restaurant
+again. Edit or forget a saved restaurant afterwards and a meal already in
+progress still adds up the way it did. That copy is the whole snapshot rule, and
+there is a test that edits the restaurant after the session starts to prove it.
+
+**No restaurant comes preloaded.** A new one starts with the usual four plate
+colours and **blank** prices to fill in from the menu; it can then be saved for
+next time. A real restaurant's name only joins the preset list once its prices
+come from that restaurant, not from an example.
+
+The counters are the point. Each person gets a card with large − and + buttons
+per plate type and their food total always in view. The whole session is saved
+to `localStorage` as it changes, so a refresh halfway through the meal loses
+nothing; **Start over** clears it.
+
+**The discount comes off first**, then service charge and VAT on what is left:
+
+```
+Food                 1,200.00
+Discount              −100.00
+Service charge 10%     110.00      on 1,100
+VAT 7%                  84.70      on 1,210
+Grand total          1,294.70
+```
+
+Taking the discount off at the end would say 1,312.40 and charge VAT on money
+nobody paid. That order is now the rule for every Harn tool (`CLAUDE.md` §4).
+
+There is no sushi engine. `src/features/sushi-split/schema.ts` turns each
+person's plates into their own items and hands the bill to `bill.ts`, which does
+the fees, the discount, the rounding and the transfers exactly as it does for
+every other split.
+
 ## Saved bills
 
 Every calculation is kept in `localStorage` under `bill-history` — there is no
@@ -345,6 +389,7 @@ the numbers.
 | `/split-group-meal` | Split Group Meal                  |
 | `/percentage` | Percentage Calculator                  |
 | `/split-taxi` | Split Taxi                            |
+| `/split-sushi` | Split Sushi                          |
 | `/vat` | VAT Calculator                               |
 | `/service-charge` | Service Charge Calculator         |
 | `/tip` | Tip Calculator                               |
@@ -384,6 +429,7 @@ npm run lint       # oxlint
 - `src/features/split-group-meal/` — the same, for one restaurant bill
 - `src/features/percentage-calculator/` — four modes, pure maths, no `Bill`
 - `src/features/journey-split/` — the fare engine, its schema and form
+- `src/features/sushi-split/` — the session, its prices snapshot, storage and form
 - `src/features/calculators/` — VAT, service charge and tip
 - `src/shared/lib/percentage.ts` — the percentage maths all of them share
 - `src/lib/calculator.ts` — pure calculation logic + THB formatting (unit tested)

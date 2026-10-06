@@ -143,5 +143,13 @@ export default defineConfig(({ command }) => ({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    /*
+     * The UI tests type whole forms through userEvent — a full Grab order with
+     * two discounts is several seconds of keystrokes on its own. Under the full
+     * suite's parallel load the default 5s budget was crossed now and then, and
+     * a test that fails only sometimes is worse than no test. This is a ceiling
+     * for slow-but-correct tests, not a speed target.
+     */
+    testTimeout: 15_000,
   },
 }))

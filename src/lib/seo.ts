@@ -120,12 +120,12 @@ const PAGES: Record<string, Record<SeoLang, PageMeta>> = {
     th: {
       title: 'หารค่าซูชิสายพาน — นับจานแต่ละคน คิดเงินคนละเท่าไหร่ | AppHarn',
       description:
-        'หารค่าซูชิสายพานตามจานที่แต่ละคนกินจริง ใส่ราคาจานของร้าน นับจาน แล้วคิดส่วนลด ค่าบริการ และ VAT ให้',
+        'หารค่าซูชิสายพาน ซูชิโร่ คัตสึ มิโดริ ชินคันเซ็น หรือร้านไหนก็ได้ นับจานแต่ละคน แล้วคิดส่วนลด ค่าบริการ และ VAT ให้',
     },
     en: {
       title: 'Split Sushi — conveyor-belt plates, everyone’s share | AppHarn',
       description:
-        'Split a conveyor-belt sushi bill by the plates each person ate, at the restaurant’s own plate prices, with discount, service charge and VAT.',
+        'Split a conveyor-belt sushi bill — Sushiro, Katsu Midori, Shinkanzen or anywhere — by the plates each person ate, with discount, service and VAT.',
     },
   },
   '/split-group-order': {

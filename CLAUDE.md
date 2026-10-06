@@ -179,12 +179,17 @@ the discount off at the end would say ฿1,312.40 and charge VAT on money nobody
 paid. This is the rule for every tool, not one: Split Sushi applies it today, and
 Split Group Meal must follow it the day it gains a discount.
 
-**No restaurant presets with invented prices.** A preset puts a real
-restaurant's name next to a price, and people trust that pairing even with a
-confirm step in front of it. Split Sushi's preset list therefore ships
-**empty**: an entry belongs there only once its prices come from that
-restaurant's own menu or a receipt. Until then a new restaurant starts with the
-usual four plate colours and blank prices, and anyone can save their own.
+**Restaurants are listed by name, never with invented prices.** Split Sushi
+lists the conveyor-belt chains in Thailand so nobody types a name they already
+know — but **by name only**. A built-in price would put a real restaurant's name
+next to a number people trust even with a confirm step in front of it, and plate
+prices differ by branch and change without notice. So picking one fills in the
+name and the usual plate colours, leaves the prices blank to copy from the menu,
+and lets the diner save **their** prices against it. Saved prices sit on top of
+the built-in entry under the same id, so the restaurant is listed once, with
+their prices; clearing them returns it to blank. A built-in price belongs in
+`restaurants.ts` only once it comes from the restaurant's own menu or a receipt —
+and then as a branch's price with a date, not "the" price.
 
 **No standalone Discount calculator.** It was on the roadmap and is not built,
 deliberately: the Percentage Calculator's discount mode already answers exactly

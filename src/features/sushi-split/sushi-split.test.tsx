@@ -177,6 +177,82 @@ describe('Split Sushi', () => {
     ).toBeInTheDocument()
   })
 
+  it('lists the sushi restaurants in Thailand, and somewhere new', () => {
+    renderSushi()
+
+    const picker = within(screen.getByLabelText('Restaurant'))
+    const group = picker.getByRole('group', {
+      name: 'Sushi restaurants in Thailand',
+    })
+    expect(within(group).getByRole('option', { name: 'Sushiro' })).toBeInTheDocument()
+    expect(picker.getByRole('option', { name: 'Somewhere new' })).toBeInTheDocument()
+  })
+
+  it('names a listed restaurant for you, and asks for its prices', async () => {
+    const user = userEvent.setup()
+    renderSushi()
+
+    await user.selectOptions(screen.getByLabelText('Restaurant'), 'sushiro')
+
+    expect(screen.getByLabelText('Restaurant name')).toHaveValue('Sushiro')
+    expect(screen.getByLabelText('Restaurant name')).toHaveAttribute('readonly')
+    expect(screen.getByLabelText('Price of Red')).toHaveValue(null)
+    expect(screen.getByText(/does not have Sushiro’s prices/i)).toBeInTheDocument()
+  })
+
+  it('remembers your prices for a listed restaurant, without listing it twice', async () => {
+    const user = userEvent.setup()
+    renderSushi()
+    const picker = () => screen.getByLabelText('Restaurant')
+
+    await user.selectOptions(picker(), 'sushiro')
+    await fill(user, 'Price of Red', '40')
+    await fill(user, 'Price of Blue', '60')
+    await fill(user, 'Price of Green', '80')
+    await fill(user, 'Price of Yellow', '100')
+    await user.click(screen.getByRole('button', { name: 'Save these prices' }))
+
+    // Go elsewhere, then come back: the prices are yours now.
+    await user.selectOptions(picker(), 'other')
+    await user.selectOptions(picker(), 'sushiro')
+
+    expect(screen.getByLabelText('Price of Blue')).toHaveValue(60)
+    expect(within(picker()).getAllByRole('option', { name: 'Sushiro' })).toHaveLength(1)
+    expect(screen.queryByText(/does not have Sushiro’s prices/i)).toBeNull()
+  })
+
+  it('clears your saved prices but keeps the restaurant listed', async () => {
+    const user = userEvent.setup()
+    renderSushi()
+    const picker = () => screen.getByLabelText('Restaurant')
+
+    await user.selectOptions(picker(), 'sushiro')
+    for (const plate of ['Red', 'Blue', 'Green', 'Yellow']) {
+      await fill(user, `Price of ${plate}`, '50')
+    }
+    await user.click(screen.getByRole('button', { name: 'Save these prices' }))
+    await user.click(screen.getByRole('button', { name: 'Clear my saved prices' }))
+
+    await user.selectOptions(picker(), 'other')
+    await user.selectOptions(picker(), 'sushiro')
+
+    expect(screen.getByLabelText('Price of Red')).toHaveValue(null)
+    expect(within(picker()).getByRole('option', { name: 'Sushiro' })).toBeInTheDocument()
+  })
+
+  it('files a restaurant you typed in under your own', async () => {
+    const user = userEvent.setup()
+    renderSushi()
+
+    await enterTheMeal(user)
+    await user.click(screen.getByRole('button', { name: /save for next time/i }))
+
+    const mine = within(screen.getByLabelText('Restaurant')).getByRole('group', {
+      name: 'Saved by you',
+    })
+    expect(within(mine).getByRole('option', { name: 'Test Sushi' })).toBeInTheDocument()
+  })
+
   it('remembers the plates after the page is reloaded', async () => {
     const user = userEvent.setup()
     const first = renderSushi()

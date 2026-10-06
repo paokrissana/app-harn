@@ -236,10 +236,13 @@ again. Edit or forget a saved restaurant afterwards and a meal already in
 progress still adds up the way it did. That copy is the whole snapshot rule, and
 there is a test that edits the restaurant after the session starts to prove it.
 
-**No restaurant comes preloaded.** A new one starts with the usual four plate
-colours and **blank** prices to fill in from the menu; it can then be saved for
-next time. A real restaurant's name only joins the preset list once its prices
-come from that restaurant, not from an example.
+**The restaurants in Thailand are listed — by name, not price.** Pick Sushiro,
+Katsu Midori Sushi or Shinkanzen Sushi and the name and the usual plate colours
+fill in, with the prices **blank** to copy from the menu, because they differ by
+branch and change without notice. Save them and they come back next time; your
+prices replace the blank entry rather than appearing beside it, and *Clear my
+saved prices* puts it back. Anywhere else is **Somewhere new**, which can be
+saved under *Saved by you*. The list lives in `restaurants.ts`.
 
 The counters are the point. Each person gets a card with large − and + buttons
 per plate type and their food total always in view. The whole session is saved

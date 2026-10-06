@@ -31,6 +31,7 @@ import {
   addPlate,
   changeCount,
   foodSoFar,
+  isUnpriced,
   linesFor,
   OTHER,
   PLATE_COLORS,
@@ -232,9 +233,24 @@ export function SushiSplit() {
   // Kept on the device as it changes, so a refresh mid-meal costs nothing.
   useEffect(() => saveSession(session), [session])
 
-  const restaurants = [...PRESET_RESTAURANTS, ...saved]
+  /*
+   * The built-in restaurants, each replaced by the diner's own saved prices
+   * when there are some — so "Sushiro" appears once, with their prices, rather
+   * than twice. Then the restaurants they typed in themselves.
+   */
+  const presetIds = new Set(PRESET_RESTAURANTS.map((r) => r.id))
+  const presets = PRESET_RESTAURANTS.map(
+    (preset) => saved.find((r) => r.id === preset.id) ?? preset,
+  )
+  const customs = saved.filter((r) => !presetIds.has(r.id))
+  const restaurants = [...presets, ...customs]
+
   const isSaved = saved.some((r) => r.id === session.restaurantId)
-  const isPreset = PRESET_RESTAURANTS.some((r) => r.id === session.restaurantId)
+  const isPreset = presetIds.has(session.restaurantId)
+  const current = restaurants.find((r) => r.id === session.restaurantId)
+  // A built-in restaurant nobody has priced yet: say so, rather than leave
+  // blank boxes looking like a fault.
+  const needsPrices = !!current && isUnpriced(current)
 
   const schema = useMemo(() => createSushiSchema(t), [t])
   const parsed = attempted ? schema.safeParse(session) : null
@@ -275,8 +291,12 @@ export function SushiSplit() {
   }
 
   const keepRestaurant = () => {
-    // Saving again updates the same entry; a preset becomes a new one of yours.
-    const id = isSaved ? session.restaurantId : newId()
+    /*
+     * A built-in restaurant keeps its own id, so the saved prices sit on top of
+     * it instead of beside it. Saving again updates the same entry. Only a
+     * restaurant typed in from scratch needs a new id.
+     */
+    const id = isPreset || isSaved ? session.restaurantId : newId()
     setSaved((list) => saveRestaurant(list, toRestaurant(session, id)))
     setSession((s) => ({ ...s, restaurantId: id }))
     setJustSaved(true)
@@ -284,8 +304,13 @@ export function SushiSplit() {
 
   const forget = () => {
     setSaved((list) => forgetRestaurant(list, session.restaurantId))
-    // The session keeps its own copy of the prices, so nothing on screen moves.
-    setSession((s) => ({ ...s, restaurantId: OTHER }))
+    /*
+     * A built-in restaurant is still in the list after its saved prices go, so
+     * the session stays pointed at it. One typed in by hand is gone entirely.
+     * Either way the session keeps its own copy of the prices — nothing on
+     * screen moves until the next meal.
+     */
+    if (!isPreset) setSession((s) => ({ ...s, restaurantId: OTHER }))
   }
 
   const startOver = () => {
@@ -339,11 +364,22 @@ export function SushiSplit() {
             onChange={(event) => chooseRestaurant(event.target.value)}
             className="border-input bg-background focus-visible:ring-ring/50 h-9 rounded-md border px-3 text-sm outline-none focus-visible:ring-[3px]"
           >
-            {restaurants.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
+            <optgroup label={t('ssPresetGroup')}>
+              {presets.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </optgroup>
+            {customs.length > 0 && (
+              <optgroup label={t('ssSavedGroup')}>
+                {customs.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             <option value={OTHER}>{t('ssOther')}</option>
           </select>
         </div>
@@ -353,6 +389,10 @@ export function SushiSplit() {
           <Input
             id="ssRestaurantName"
             placeholder={t('ssRestaurantNamePlaceholder')}
+            // A built-in restaurant's name is known; renaming it would leave
+            // its saved prices under a name that no longer matches the list.
+            readOnly={isPreset}
+            className={cn(isPreset && 'bg-muted text-muted-foreground')}
             aria-invalid={!!errors.restaurantName}
             value={session.restaurantName}
             onChange={(event) =>
@@ -364,6 +404,11 @@ export function SushiSplit() {
 
         <div className="flex flex-col gap-2">
           <Label>{t('ssPlatePrices')}</Label>
+          {needsPrices && (
+            <p className="rounded-md bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
+              {t('ssNoPricesYet', { name: session.restaurantName })}
+            </p>
+          )}
           {session.plates.map((plate, index) => {
             const label = plate.label.trim() || `${t('ssPlate')} ${index + 1}`
 
@@ -450,25 +495,25 @@ export function SushiSplit() {
               <PlusIcon />
               {t('ssAddPlate')}
             </Button>
-            {!isPreset && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!pricesReady}
-                onClick={keepRestaurant}
-              >
-                {justSaved ? <CheckIcon /> : null}
-                {justSaved
-                  ? t('ssSaved')
-                  : isSaved
-                    ? t('ssUpdateRestaurant')
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!pricesReady}
+              onClick={keepRestaurant}
+            >
+              {justSaved ? <CheckIcon /> : null}
+              {justSaved
+                ? t('ssSaved')
+                : isSaved
+                  ? t('ssUpdateRestaurant')
+                  : isPreset
+                    ? t('ssSavePrices')
                     : t('ssSaveRestaurant')}
-              </Button>
-            )}
+            </Button>
             {isSaved && (
               <Button type="button" variant="ghost" size="sm" onClick={forget}>
-                {t('ssForgetRestaurant')}
+                {isPreset ? t('ssClearSavedPrices') : t('ssForgetRestaurant')}
               </Button>
             )}
           </div>

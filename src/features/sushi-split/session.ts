@@ -60,11 +60,23 @@ export interface PlatePrice {
   color: PlateColor | null
 }
 
-/** A restaurant and its own plate prices. */
+/**
+ * A restaurant and its own plate prices.
+ *
+ * An **empty** price list means Harn knows the restaurant but not what it
+ * charges — a session there starts with the usual four plate colours and blank
+ * prices to fill in from the menu. That is how the built-in list names real
+ * restaurants without inventing a price for any of them.
+ */
 export interface SushiRestaurant {
   id: string
   name: string
   pricing: PlatePrice[]
+}
+
+/** True when Harn knows the restaurant's name but has no prices for it. */
+export function isUnpriced(restaurant: SushiRestaurant): boolean {
+  return restaurant.pricing.length === 0
 }
 
 /** A plate type inside a session — the price kept as typed, so it can be edited. */
@@ -149,7 +161,7 @@ function snapshotOf(
   restaurant: SushiRestaurant | null,
   nameOf?: ColorNamer,
 ): PlateType[] {
-  if (!restaurant) return templatePlates(nameOf)
+  if (!restaurant || isUnpriced(restaurant)) return templatePlates(nameOf)
 
   return restaurant.pricing.map((plate) => ({
     id: plate.id,
